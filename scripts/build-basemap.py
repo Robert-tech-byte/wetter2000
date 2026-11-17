@@ -51,9 +51,10 @@ QUERY_BASE = f"""
   rel["natural"="water"]["name"~"^(Starnberger See|Ammersee)$"];
   way["natural"="water"]["name"~"^(Starnberger See|Ammersee)$"];
   node["place"~"^(town|city)$"]["name"~"^({'|'.join(PLACES)})$"]({BBOX});
-  way["aeroway"="aerodrome"]["iata"="MUC"];
 );
 out geom;
+nwr["aeroway"="aerodrome"]["iata"="MUC"];
+out center;
 """
 
 QUERY_MOTORWAYS = f"""
@@ -175,7 +176,8 @@ def main():
         tags = el.get("tags", {})
         name = tags.get("name")
         if el["type"] == "relation" and tags.get("boundary") == "administrative":
-            city = [rnd(simplify(r, 0.03)) for r in outer_rings(el)]
+            # Drop tiny slivers left over from ring stitching.
+            city = [rnd(simplify(r, 0.03)) for r in outer_rings(el) if len(r) > 20]
         elif el["type"] == "relation" and tags.get("waterway") == "river":
             for m in el.get("members", []):
                 if m.get("type") == "way" and m.get("role") in ("main_stream", ""):
@@ -188,12 +190,10 @@ def main():
                 lakes += [rnd(simplify(r, 0.05)) for r in rings if len(r) > 3]
         elif el["type"] == "node" and name in PLACES and name not in {p["name"] for p in places}:
             places.append({"name": PLACES[name], "lat": round(el["lat"], 4), "lon": round(el["lon"], 4)})
-        elif tags.get("aeroway") == "aerodrome":
-            g = geom(el)
-            if g:
-                places.append(
-                    {"name": "Flughafen", "lat": round(sum(p[0] for p in g) / len(g), 4), "lon": round(sum(p[1] for p in g) / len(g), 4)}
-                )
+        elif tags.get("aeroway") == "aerodrome" and "Flughafen" not in {p["name"] for p in places}:
+            c = el.get("center") or ({"lat": el["lat"], "lon": el["lon"]} if "lat" in el else None)
+            if c:
+                places.append({"name": "Flughafen", "lat": round(c["lat"], 4), "lon": round(c["lon"], 4)})
 
     print("Fetching motorways …", file=sys.stderr)
     roads = overpass(QUERY_MOTORWAYS)
@@ -206,7 +206,7 @@ def main():
                 by_ref.setdefault(ref, []).append(rnd(line))
     motorways = [{"ref": r, "lines": lines} for r, lines in sorted(by_ref.items())]
 
-    missing = [n for n in PLACES if n not in {p["name"] for p in places}]
+    missing = [n for n in [*PLACES, "Flughafen"] if n not in {p["name"] for p in places}]
     if not city or not isar or len(lakes) < 2 or missing:
         raise SystemExit(f"Incomplete data: city={len(city)} isar={len(isar)} lakes={len(lakes)} missing={missing}")
 
