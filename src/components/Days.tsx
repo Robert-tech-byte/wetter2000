@@ -1,4 +1,7 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
+import type { PressureData } from '../lib/pressure';
+
+const PressureMap = lazy(() => import('./PressureMap').then((m) => ({ default: m.PressureMap })));
 import { analyzeDays, dayConfidence, median, rainConsensus, type DayAgreement, type ConfidenceLevel } from '../lib/agreement';
 import type { EcmwfForecast, MemberSet } from '../lib/api';
 import { AGREEMENT_DAYS, EPS_MODEL, HIRES_MODELS, TEMP_TOLERANCE } from '../lib/config';
@@ -13,6 +16,7 @@ interface Props {
   ecmwf: EcmwfForecast | null;
   hires: MemberSet | null;
   eps: MemberSet | null;
+  pressure: PressureData | null;
 }
 
 const level = (v: number | null): ConfidenceLevel | null => (v == null ? null : v >= 0.8 ? 3 : v >= 0.5 ? 2 : 1);
@@ -99,14 +103,24 @@ function PowerDetails({
   day,
   eps,
   basics,
+  pressure,
+  date,
 }: {
   day: DayAgreement | null;
   eps: DayAgreement | null;
   basics: { rain: number | null; gust: number | null; sunrise: string; sunset: string };
+  pressure: PressureData | null;
+  date: string;
 }) {
+  const [open, setOpen] = useState(false);
   return (
-    <details className="fold power">
+    <details className="fold power" onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
       <summary>Details</summary>
+      {open && pressure && (
+        <Suspense fallback={<p className="note">Karte wird geladen …</p>}>
+          <PressureMap data={pressure} date={date} />
+        </Suspense>
+      )}
       <dl className="kv">
         <div>
           <dt>Regen (ECMWF)</dt>
@@ -176,7 +190,7 @@ function PowerDetails({
   );
 }
 
-export function Days({ ecmwf, hires, eps }: Props) {
+export function Days({ ecmwf, hires, eps, pressure }: Props) {
   const nowKey = localHourKey();
   const today = nowKey.slice(0, 10);
 
@@ -235,7 +249,7 @@ export function Days({ ecmwf, hires, eps }: Props) {
             ) : (
               <p className="note">ECMWF IFS. Wie sicher die Vorhersage ist, wird nur für die ersten 3 Tage berechnet.</p>
             )}
-            <PowerDetails day={a} eps={epsDays.find((e) => e.date === x.date) ?? null} basics={x} />
+            <PowerDetails day={a} eps={epsDays.find((e) => e.date === x.date) ?? null} basics={x} pressure={pressure} date={x.date} />
           </DayRow>
         );
       })}

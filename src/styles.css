@@ -1081,3 +1081,64 @@ table.mini small {
   gap: 6px;
   align-items: center;
 }
+
+/* --- Luftdruckkarte Europa --- */
+.pressure {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.pressure svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.pressure .sea {
+  fill: var(--map-water);
+  opacity: 0.35;
+}
+.pressure .land {
+  fill: var(--map-land);
+  stroke: var(--map-road);
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+}
+.pressure .iso {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 0.9;
+  opacity: 0.45;
+}
+.pressure .iso.major {
+  stroke-width: 1.6;
+  opacity: 0.6;
+}
+.pressure .munich {
+  fill: var(--fg);
+  stroke: var(--map-land);
+  stroke-width: 2;
+}
+.pressure .hl,
+.pressure .hv {
+  font-family: var(--font-display);
+  paint-order: stroke;
+  stroke: var(--map-land);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.pressure .hl {
+  font-size: 26px;
+  font-weight: 600;
+}
+.pressure .hv {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pressure .high text {
+  fill: var(--accent);
+}
+.pressure .low text {
+  fill: var(--low);
+}

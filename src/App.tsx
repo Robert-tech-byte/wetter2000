@@ -7,12 +7,14 @@ import { Hourly } from './components/Hourly';
 import { Now } from './components/Now';
 import { Radar } from './components/Radar';
 import { LOCATION } from './lib/config';
+import { usePressure } from './lib/usePressure';
 import { useRadar } from './lib/useRadar';
 import { useWeather } from './lib/useWeather';
 
 export default function App() {
   const w = useWeather();
   const radar = useRadar();
+  const pressure = usePressure();
   const [route, setRoute] = useState<Km[] | null>(null);
   const errors = [
     w.ecmwf.error && 'Vorhersage',
@@ -54,7 +56,7 @@ export default function App() {
         </p>
       )}
 
-      <Days ecmwf={w.ecmwf.data} hires={w.hires.data} eps={w.eps.data} />
+      <Days ecmwf={w.ecmwf.data} hires={w.hires.data} eps={w.eps.data} pressure={pressure} />
 
       <About
         updatedAt={w.updatedAt}
