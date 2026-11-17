@@ -1,6 +1,7 @@
 name: Update basemap
 
-# Fetches simplified OpenStreetMap geodata for the radar map and commits it.
+# Fetches simplified OpenStreetMap geodata for the radar map and pushes it to the
+# branch "basemap-data". Copy src/data/basemap.json from there onto main.
 on:
   workflow_dispatch:
 
@@ -16,10 +17,11 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 scripts/build-basemap.py
-      - name: Commit if changed
+      - name: Push to branch basemap-data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git checkout -B basemap-data
           git add src/data/basemap.json
-          git diff --cached --quiet || git commit -m "Basemap aus OpenStreetMap aktualisieren"
-          git push
+          git commit -m "Basemap aus OpenStreetMap (${{ github.run_id }})" || true
+          git push -f origin basemap-data

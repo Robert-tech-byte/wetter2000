@@ -2,8 +2,9 @@
 """
 Builds src/data/basemap.json: simplified OpenStreetMap geodata for the radar base map.
 
-Contents: Munich city boundary, Isar, Starnberger See, Ammersee, motorways and a few
-place labels within ±62 km of the city centre. Data © OpenStreetMap contributors (ODbL).
+Contents: Munich city boundary, Isar, Starnberger See, Ammersee, motorways, main roads
+(trunk/primary, within ±25 km), district and town labels and the U-Bahn station
+Schwanthalerhöhe (reference point for the commute check). Data © OpenStreetMap contributors (ODbL).
 
 Run manually (needs internet):  python3 scripts/build-basemap.py
 or via the "Update basemap" GitHub workflow.
@@ -25,6 +26,17 @@ N = CENTER[0] + HALF_KM / KM_LAT
 W = CENTER[1] - HALF_KM / KM_LON
 E = CENTER[1] + HALF_KM / KM_LON
 BBOX = f"{S:.4f},{W:.4f},{N:.4f},{E:.4f}"
+ROAD_KM = 25
+BBOX_ROADS = (
+    f"{CENTER[0] - ROAD_KM / KM_LAT:.4f},{CENTER[1] - ROAD_KM / KM_LON:.4f},"
+    f"{CENTER[0] + ROAD_KM / KM_LAT:.4f},{CENTER[1] + ROAD_KM / KM_LON:.4f}"
+)
+
+SUBURBS = [
+    "Schwabing", "Maxvorstadt", "Pasing", "Sendling", "Giesing", "Bogenhausen", "Trudering",
+    "Moosach", "Neuhausen", "Laim", "Haidhausen", "Hadern", "Perlach", "Freimann", "Aubing",
+    "Solln", "Feldmoching", "Riem", "Milbertshofen", "Obermenzing",
+]
 
 ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
@@ -53,6 +65,10 @@ QUERY_BASE = f"""
   node["place"~"^(town|city)$"]["name"~"^({'|'.join(PLACES)})$"]({BBOX});
 );
 out geom;
+node["place"~"^(suburb|quarter|neighbourhood)$"]["name"~"^({'|'.join(SUBURBS)})$"]({BBOX_ROADS});
+out;
+node["railway"="station"]["station"="subway"]["name"="Schwanthalerhöhe"];
+out;
 nwr["aeroway"="aerodrome"]["iata"="MUC"];
 out center;
 """
@@ -60,6 +76,12 @@ out center;
 QUERY_MOTORWAYS = f"""
 [out:json][timeout:180];
 way["highway"="motorway"]({BBOX});
+out geom;
+"""
+
+QUERY_ROADS = f"""
+[out:json][timeout:180];
+way["highway"~"^(trunk|primary)$"]({BBOX_ROADS});
 out geom;
 """
 
@@ -159,6 +181,28 @@ def clip_lines(line):
     return [c for c in parts if len(c) > 1]
 
 
+def join_lines(lines):
+    """Greedily joins lines that share endpoints, to cut the number of tiny segments."""
+    by_start = {}
+    for i, l in enumerate(lines):
+        by_start.setdefault(tuple(l[0]), []).append(i)
+    used = [False] * len(lines)
+    out = []
+    for i, l in enumerate(lines):
+        if used[i]:
+            continue
+        used[i] = True
+        cur = list(l)
+        while True:
+            nxt = next((j for j in by_start.get(tuple(cur[-1]), []) if not used[j]), None)
+            if nxt is None:
+                break
+            used[nxt] = True
+            cur += lines[nxt][1:]
+        out.append(cur)
+    return out
+
+
 def rnd(line):
     return [[round(p[0], 4), round(p[1], 4)] for p in line]
 
@@ -170,7 +214,8 @@ def outer_rings(rel):
 def main():
     print("Fetching base layers …", file=sys.stderr)
     base = overpass(QUERY_BASE)
-    city, isar, lakes, places = [], [], [], []
+    city, isar, lakes, places, suburbs = [], [], [], [], []
+    anchor = None
     seen_lakes = set()
     for el in base["elements"]:
         tags = el.get("tags", {})
@@ -188,6 +233,11 @@ def main():
             if rings:
                 seen_lakes.add(name)
                 lakes += [rnd(simplify(r, 0.05)) for r in rings if len(r) > 3]
+        elif el["type"] == "node" and tags.get("station") == "subway":
+            anchor = {"name": "U Schwanthalerhöhe", "lat": round(el["lat"], 5), "lon": round(el["lon"], 5)}
+        elif el["type"] == "node" and name in SUBURBS and tags.get("place") != "town":
+            if name not in {p["name"] for p in suburbs}:
+                suburbs.append({"name": name, "lat": round(el["lat"], 4), "lon": round(el["lon"], 4)})
         elif el["type"] == "node" and name in PLACES and name not in {p["name"] for p in places}:
             places.append({"name": PLACES[name], "lat": round(el["lat"], 4), "lon": round(el["lon"], 4)})
         elif tags.get("aeroway") == "aerodrome" and "Flughafen" not in {p["name"] for p in places}:
@@ -206,9 +256,21 @@ def main():
                 by_ref.setdefault(ref, []).append(rnd(line))
     motorways = [{"ref": r, "lines": lines} for r, lines in sorted(by_ref.items())]
 
+    print("Fetching main roads …", file=sys.stderr)
+    main_roads = []
+    for el in overpass(QUERY_ROADS)["elements"]:
+        line = simplify(geom(el), 0.03)
+        if len(line) > 1:
+            main_roads.append(rnd(line))
+    main_roads = join_lines(main_roads)
+
     missing = [n for n in [*PLACES, "Flughafen"] if n not in {p["name"] for p in places}]
-    if not city or not isar or len(lakes) < 2 or missing:
-        raise SystemExit(f"Incomplete data: city={len(city)} isar={len(isar)} lakes={len(lakes)} missing={missing}")
+    if not city or not isar or len(lakes) < 2 or missing or not anchor or not main_roads:
+        raise SystemExit(
+            f"Incomplete data: city={len(city)} isar={len(isar)} lakes={len(lakes)} missing={missing} "
+            f"anchor={anchor} roads={len(main_roads)}"
+        )
+    print(f"Suburbs found: {[p['name'] for p in suburbs]}", file=sys.stderr)
 
     out = {
         "attribution": "© OpenStreetMap contributors, ODbL 1.0 – simplified",
@@ -217,12 +279,15 @@ def main():
         "isar": isar,
         "lakes": lakes,
         "motorways": motorways,
+        "roads": main_roads,
         "places": places,
+        "suburbs": suburbs,
+        "anchor": anchor,
     }
     path = Path(__file__).resolve().parent.parent / "src" / "data" / "basemap.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
-    pts = sum(len(l) for l in city + isar + lakes) + sum(len(l) for m in motorways for l in m["lines"])
+    pts = sum(len(l) for l in city + isar + lakes + main_roads) + sum(len(l) for m in motorways for l in m["lines"])
     print(f"Wrote {path} ({path.stat().st_size // 1024} KB, {pts} points, motorways: {[m['ref'] for m in motorways]})")
 
 
