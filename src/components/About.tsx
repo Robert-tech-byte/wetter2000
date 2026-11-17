@@ -6,6 +6,7 @@ import { Legend } from './Radar';
 export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null; loading: boolean; onReload: () => void }) {
   return (
     <footer className="about">
+      <p className="claim">Wetter für München. Ehrlich gerechnet.</p>
       <details className="fold">
         <summary>Quellen &amp; Methode</summary>
         <div className="prose">

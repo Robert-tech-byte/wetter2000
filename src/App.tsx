@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { About } from './components/About';
+import { Logo } from './components/Logo';
 import { Commute } from './components/Commute';
 import type { Km } from './lib/geo';
 import { Days } from './components/Days';
@@ -25,10 +26,13 @@ export default function App() {
   return (
     <div className="app">
       <header className="top">
-        <span className="place">{LOCATION.name}</span>
         <span className="brand">
-          Wetter<b>2000</b>
+          <Logo size={30} />
+          <span>
+            Wetter<b>2000</b>
+          </span>
         </span>
+        <span className="place">{LOCATION.name}</span>
       </header>
 
       <Commute radar={radar.data} onRoute={setRoute} />

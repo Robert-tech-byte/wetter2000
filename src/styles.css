@@ -1,11 +1,16 @@
-/* One narrow column, phone first. Cool neutrals, blue only for rain. */
+/* One narrow column, phone first. Brand: Tiefblau + Isar-Petrol; blue (--accent) stays reserved for rain. */
 :root {
-  --bg: #f4f6f8;
+  --bg: #f3f6f8;
   --surface: #ffffff;
-  --fg: #16202b;
-  --muted: #64707d;
-  --line: #dde3ea;
+  --fg: #12202e;
+  --muted: #5b6b7a;
+  --line: #dce3ea;
   --accent: #2364d2;
+  --brand: #0f2d4a;
+  --link: #1c7c8c;
+  --cta-bg: #0f2d4a;
+  --cta-fg: #f3f6f8;
+  --signal: #f2b33d;
   --good: #23864a;
   --mid: #b7791f;
   --low: #c2412d;
@@ -19,20 +24,24 @@
   --pm-coast: #7d8b9a;
   --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0f1419;
-    --surface: #161d25;
-    --fg: #e7edf3;
-    --muted: #8b97a4;
-    --line: #26303b;
+    --bg: #0b1622;
+    --surface: #12202e;
+    --fg: #e8eef4;
+    --muted: #93a2b1;
+    --line: #223244;
     --accent: #6ea8ff;
+    --link: #4fb3c3;
+    --cta-bg: #1c7c8c;
+    --cta-fg: #ffffff;
     --good: #4cc27a;
     --mid: #e0a43a;
     --low: #f07a62;
-    --map-land: #141b22;
+    --map-land: #101d2a;
     --map-water: #1f3a57;
     --map-city: #1c252f;
     --map-road: #2f3a46;
@@ -44,16 +53,19 @@
   }
 }
 :root[data-theme='dark'] {
-  --bg: #0f1419;
-  --surface: #161d25;
-  --fg: #e7edf3;
-  --muted: #8b97a4;
-  --line: #26303b;
+  --bg: #0b1622;
+  --surface: #12202e;
+  --fg: #e8eef4;
+  --muted: #93a2b1;
+  --line: #223244;
   --accent: #6ea8ff;
+  --link: #4fb3c3;
+  --cta-bg: #1c7c8c;
+  --cta-fg: #ffffff;
   --good: #4cc27a;
   --mid: #e0a43a;
   --low: #f07a62;
-  --map-land: #141b22;
+  --map-land: #101d2a;
   --map-water: #1f3a57;
   --map-city: #1c252f;
   --map-road: #2f3a46;
@@ -78,14 +90,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a {
-  color: var(--accent);
+  color: var(--link);
 }
 button {
   font: inherit;
   color: inherit;
 }
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--link);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -104,19 +116,31 @@ button {
 .top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   font-size: 0.9rem;
 }
-.place {
-  font-weight: 600;
-}
 .brand {
-  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: -0.015em;
+  color: var(--fg);
+  font-weight: 500;
 }
 .brand b {
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--link);
+  font-weight: 700;
+}
+.logo {
+  display: block;
+  flex: none;
+  border-radius: 7px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 10%, transparent);
+}
+.place {
+  color: var(--muted);
 }
 
 .loading {
@@ -177,7 +201,7 @@ button {
   list-style: none;
   cursor: pointer;
   font-size: 0.85rem;
-  color: var(--accent);
+  color: var(--link);
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -299,7 +323,7 @@ button {
 .radar-controls input {
   flex: 1;
   min-width: 0;
-  accent-color: var(--accent);
+  accent-color: var(--link);
 }
 .radar-controls output {
   font-size: 0.85rem;
@@ -311,7 +335,7 @@ button {
   color: var(--muted);
 }
 .radar-controls output.forecast span {
-  color: var(--accent);
+  color: var(--link);
   font-weight: 600;
 }
 .round {
@@ -542,7 +566,7 @@ td small.wet {
   border: 0;
   background: none;
   padding: 0;
-  color: var(--accent);
+  color: var(--link);
   cursor: pointer;
   font-size: inherit;
 }
@@ -570,7 +594,7 @@ td small.wet {
   background: none;
   padding: 0;
   cursor: pointer;
-  color: var(--accent);
+  color: var(--link);
   font-size: 0.85rem;
   display: inline-flex;
   align-items: center;
@@ -605,8 +629,8 @@ td small.wet {
   padding: 14px 18px;
   border: 0;
   border-radius: 14px;
-  background: var(--fg);
-  color: var(--bg);
+  background: var(--cta-bg);
+  color: var(--cta-fg);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -717,8 +741,8 @@ td small.wet {
   border: 0;
   border-radius: 12px;
   padding: 12px;
-  background: var(--fg);
-  color: var(--bg);
+  background: var(--cta-bg);
+  color: var(--cta-fg);
   font-weight: 600;
   cursor: pointer;
 }
@@ -826,7 +850,7 @@ td small.wet {
   opacity: 0.6;
 }
 .day-chart .now {
-  stroke: var(--accent);
+  stroke: var(--link);
   stroke-width: 1;
   stroke-dasharray: 2 2;
 }
@@ -1149,4 +1173,18 @@ table.mini small {
 }
 .pressure .low text {
   fill: var(--low);
+}
+
+/* --- Marke: Messwerte in Mono --- */
+.radar-controls output,
+.stand,
+.pressure figcaption {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+.claim {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--fg);
 }

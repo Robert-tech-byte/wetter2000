@@ -1,0 +1,15 @@
+{
+  "name": "Wetter2000 · München",
+  "short_name": "Wetter2000",
+  "description": "Wetter für München. Ehrlich gerechnet.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0F2D4A",
+  "theme_color": "#0F2D4A",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
