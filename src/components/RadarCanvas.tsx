@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { drawOver, drawUnder, type MapColors, type View } from '../lib/basemap';
-import { kmToGrid, rainColor, sample, type RadarData } from '../lib/radar';
+import type { Km } from '../lib/geo';
+import { kmToGrid, rainColor, type RadarData } from '../lib/radar';
 import { useThemeColors } from '../lib/useThemeColors';
 
 interface Props {
@@ -10,24 +11,25 @@ interface Props {
   /** Half width of the shown square in km. */
   extent: number;
   label: string;
+  route?: Km[] | null;
 }
 
-
-function makeCanvas(w: number, h = w) {
+function makeCanvas(w: number) {
   const c = document.createElement('canvas');
   c.width = w;
-  c.height = h;
+  c.height = w;
   return c;
 }
 
-export function RadarCanvas({ data, t, extent, label }: Props) {
+/**
+ * Draws the map and the DWD radar as 1-km blocks. Every screen pixel looks up the radar
+ * cell it lies in (exact projection, no seams); blocks keep their crisp edges.
+ */
+export function RadarCanvas({ data, t, extent, label, route }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
-  /** Off-screen resolution of the rain field (≈ 2–3 px per km) before smooth up-scaling. */
-  const RAIN_RES = extent > 45 ? 360 : 240;
   const theme = useThemeColors();
   const [size, setSize] = useState(0);
 
-  // Track the rendered size.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -50,10 +52,10 @@ export function RadarCanvas({ data, t, extent, label }: Props) {
     [theme],
   );
 
-  // Cached map layers, re-drawn only when size or theme change.
+  const dpr = Math.min(2, typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1);
+
   const layers = useMemo(() => {
     if (!size) return null;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
     const px = Math.round(size * dpr);
     const view: View = { size, extent };
     const under = makeCanvas(px);
@@ -63,28 +65,31 @@ export function RadarCanvas({ data, t, extent, label }: Props) {
     u.scale(dpr, dpr);
     o.scale(dpr, dpr);
     drawUnder(u, view, colors);
-    drawOver(o, view, colors);
+    drawOver(o, view, colors, route);
     return { under, over, px };
-  }, [size, extent, colors]);
+  }, [size, extent, colors, route, dpr]);
 
-  // Pre-computed mapping from off-screen pixels to radar grid positions.
+  /** Rain layer resolution: one texel per CSS pixel. */
+  const res = size || 1;
+
+  /** Radar cell index for every texel (-1 = outside the radar grid). */
   const lookup = useMemo(() => {
-    if (!data) return null;
+    if (!data || !size) return null;
     const toGrid = kmToGrid(data.cornersKm, data.rows, data.cols);
-    const rows = new Float32Array(RAIN_RES * RAIN_RES);
-    const cols = new Float32Array(RAIN_RES * RAIN_RES);
-    for (let py = 0; py < RAIN_RES; py++)
-      for (let pxl = 0; pxl < RAIN_RES; pxl++) {
-        const x = ((pxl + 0.5) / RAIN_RES) * 2 * extent - extent;
-        const y = extent - ((py + 0.5) / RAIN_RES) * 2 * extent;
+    const idx = new Int32Array(res * res);
+    for (let py = 0; py < res; py++)
+      for (let px = 0; px < res; px++) {
+        const x = ((px + 0.5) / res) * 2 * extent - extent;
+        const y = extent - ((py + 0.5) / res) * 2 * extent;
         const [r, c] = toGrid(x, y);
-        rows[py * RAIN_RES + pxl] = r;
-        cols[py * RAIN_RES + pxl] = c;
+        const ri = Math.round(r);
+        const ci = Math.round(c);
+        idx[py * res + px] = ri < 0 || ci < 0 || ri >= data.rows || ci >= data.cols ? -1 : ri * data.cols + ci;
       }
-    return { rows, cols };
-  }, [data, extent, RAIN_RES]);
+    return idx;
+  }, [data, extent, res, size]);
 
-  const rainCanvas = useMemo(() => makeCanvas(RAIN_RES), [RAIN_RES]);
+  const rainCanvas = useMemo(() => makeCanvas(res), [res]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -101,34 +106,36 @@ export function RadarCanvas({ data, t, extent, label }: Props) {
       const k = Math.max(0, Math.min(data.frames.length - 1, Math.floor(t)));
       const k1 = Math.min(data.frames.length - 1, k + 1);
       const f = Math.max(0, Math.min(1, t - k));
-      const a = data.frames[k].display;
-      const b = data.frames[k1].display;
+      const a = data.frames[k].rate;
+      const b = data.frames[k1].rate;
+      // Colour per radar cell once, then paint texels.
+      const cellColor = new Map<number, [number, number, number, number] | null>();
       const rc = rainCanvas.getContext('2d')!;
-      const img = rc.createImageData(RAIN_RES, RAIN_RES);
+      const img = rc.createImageData(res, res);
       const d = img.data;
-      for (let i = 0; i < RAIN_RES * RAIN_RES; i++) {
-        const r = lookup.rows[i];
-        const c = lookup.cols[i];
-        const va = sample(a, data.rows, data.cols, r, c);
-        const v = f > 0 ? va * (1 - f) + sample(b, data.rows, data.cols, r, c) * f : va;
-        const col = rainColor(v);
+      for (let i = 0; i < lookup.length; i++) {
+        const cell = lookup[i];
+        if (cell < 0) continue;
+        let col = cellColor.get(cell);
+        if (col === undefined) {
+          col = rainColor(a[cell] * (1 - f) + b[cell] * f);
+          cellColor.set(cell, col);
+        }
         if (!col) continue;
         const o = i * 4;
         d[o] = col[0];
         d[o + 1] = col[1];
         d[o + 2] = col[2];
-        d[o + 3] = col[3] * 255;
+        d[o + 3] = Math.max(col[3], 0.35) * 255;
       }
       rc.putImageData(img, 0, 0);
       ctx.save();
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.filter = 'blur(1px)';
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(rainCanvas, 0, 0, canvas.width, canvas.height);
       ctx.restore();
     }
     ctx.drawImage(layers.over, 0, 0);
-  }, [data, lookup, layers, t, rainCanvas, RAIN_RES]);
+  }, [data, lookup, layers, t, rainCanvas, res]);
 
   return <canvas ref={ref} className="radar-canvas" role="img" aria-label={label} />;
 }

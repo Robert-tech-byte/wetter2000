@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { About } from './components/About';
+import { Commute } from './components/Commute';
+import type { Km } from './lib/geo';
 import { Days } from './components/Days';
 import { Now } from './components/Now';
 import { Radar } from './components/Radar';
@@ -9,6 +12,7 @@ import { useWeather } from './lib/useWeather';
 export default function App() {
   const w = useWeather();
   const radar = useRadar();
+  const [route, setRoute] = useState<Km[] | null>(null);
   const errors = [
     w.ecmwf.error && 'Vorhersage',
     w.hires.error && 'Modellvergleich',
@@ -24,6 +28,8 @@ export default function App() {
         </span>
       </header>
 
+      <Commute radar={radar.data} onRoute={setRoute} />
+
       {w.loading && !w.updatedAt ? (
         <div className="loading" aria-live="polite">
           Lade Wetterdaten …
@@ -32,7 +38,7 @@ export default function App() {
         <Now current={w.current.data} ecmwf={w.ecmwf.data} />
       )}
 
-      <Radar data={radar.data} error={radar.error} />
+      <Radar data={radar.data} error={radar.error} route={route} />
 
       {errors.length > 0 && (
         <p className="error" role="alert">

@@ -4,6 +4,7 @@ import { nowcastSentence } from '../lib/nowcast';
 import { pointRateAt, rainCss, RAIN_STOPS, type RadarData } from '../lib/radar';
 import { clock } from '../lib/time';
 import { RadarCanvas } from './RadarCanvas';
+import type { Km } from '../lib/geo';
 
 const RAIN = 0.1;
 /** Playback speed in frames (5 min) per second. */
@@ -20,7 +21,7 @@ function useReducedMotion() {
   return reduce;
 }
 
-export function Radar({ data, error }: { data: RadarData | null; error: string | null }) {
+export function Radar({ data, error, route }: { data: RadarData | null; error: string | null; route?: Km[] | null }) {
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [large, setLarge] = useState(false);
@@ -144,7 +145,7 @@ export function Radar({ data, error }: { data: RadarData | null; error: string |
       )}
 
       <button type="button" className="radar-frame" onClick={() => setLarge(true)} aria-label="Radar groß anzeigen">
-        <RadarCanvas data={data} t={t} extent={40} label="Regenradar München und Umland" />
+        <RadarCanvas data={data} t={t} extent={15} route={route} label="Regenradar München" />
         {!data && <span className="radar-loading">Radar wird geladen …</span>}
       </button>
       {controls}
@@ -160,7 +161,7 @@ export function Radar({ data, error }: { data: RadarData | null; error: string |
         </div>
         {large && (
           <div className="radar-frame big">
-            <RadarCanvas data={data} t={t} extent={60} label="Regenradar München und Umland, groß" />
+            <RadarCanvas data={data} t={t} extent={40} route={route} label="Regenradar München und Umland, groß" />
           </div>
         )}
         {controls}

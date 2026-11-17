@@ -463,46 +463,7 @@ button {
   margin-left: 2px;
 }
 
-.agree {
-  display: grid;
-  gap: 10px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--line);
-}
-.agree-head {
-  margin: 0;
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-}
-.agree-head span {
-  color: var(--muted);
-}
-.models {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-}
-.models i {
-  height: 14px;
-  border-radius: 3px;
-  background: var(--line);
-}
-.models i.rain {
-  background: var(--accent);
-}
-.models i.na {
-  background: transparent;
-  border: 1px dashed var(--line);
-}
 
-.model-details {
-  display: grid;
-  gap: 12px;
-}
-.chart {
-  margin: 0 -4px;
-}
 .table-wrap {
   overflow-x: auto;
 }
@@ -580,4 +541,331 @@ td small.wet {
   .app {
     padding-top: 48px;
   }
+}
+
+/* --- Kopf: „Mehr zu jetzt“ rechts --- */
+.now-hl {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.toggle {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.toggle::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+}
+.toggle[aria-expanded='true']::after {
+  transform: rotate(-135deg) translateY(-1px);
+}
+.now-more {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.now-more[hidden] {
+  display: none;
+}
+
+/* --- Komme ich trocken an? --- */
+.commute-cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.commute-cta svg {
+  width: 16px;
+  height: 16px;
+}
+.commute {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.commute-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.seg.wide {
+  display: flex;
+}
+.seg.wide button {
+  flex: 1;
+}
+.seg button {
+  border: 0;
+  background: none;
+  padding: 7px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--muted);
+}
+.seg button[aria-checked='true'] {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+}
+.commute-setup {
+  display: grid;
+  gap: 12px;
+}
+.setup-q {
+  margin: 0;
+  font-weight: 500;
+}
+.compass {
+  position: relative;
+  width: 172px;
+  height: 172px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 1px dashed var(--line);
+}
+.needle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+}
+.needle[aria-checked='true'] {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+.compass-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--fg);
+}
+.compass-center i {
+  position: absolute;
+  left: 4px;
+  bottom: 5px;
+  width: 2px;
+  height: 34px;
+  background: var(--fg);
+  border-radius: 1px;
+  transform-origin: 50% 100%;
+}
+.primary {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+  cursor: pointer;
+}
+.commute-result {
+  display: grid;
+  gap: 10px;
+}
+.verdict {
+  margin: 0;
+  font: 500 1.6rem/1.15 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.verdict.dry {
+  color: var(--good);
+}
+.verdict-sub {
+  margin: 0;
+}
+.departures {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  gap: 2px;
+}
+.departures li {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.departures i {
+  display: block;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--line);
+}
+.departures .dry i {
+  background: color-mix(in srgb, var(--good) 55%, transparent);
+}
+.departures .drops i {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.departures .wet i {
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.departures .soaked i {
+  background: var(--accent);
+}
+.departures .modell i {
+  opacity: 0.5;
+}
+.departures .pick i {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
+}
+.departures span {
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+  height: 1em;
+  overflow: visible;
+}
+
+/* --- Tagesdiagramm & Sicherheit --- */
+.day-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.day-chart .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.day-chart .axis {
+  fill: var(--muted);
+  font-size: 9px;
+  font-family: var(--font-body);
+}
+.day-chart .val {
+  fill: var(--fg);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+.day-chart .temp {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.day-chart .band {
+  fill: var(--fg);
+  opacity: 0.1;
+}
+.day-chart .dot {
+  fill: var(--fg);
+}
+.day-chart .rain {
+  fill: var(--accent);
+  opacity: 0.75;
+}
+.day-chart .past {
+  fill: var(--bg);
+  opacity: 0.6;
+}
+.day-chart .now {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.certainty {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.certainty > div {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+.certainty dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.certainty dd {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.9rem;
+}
+.cert-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cert-why {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.fold.power {
+  margin-top: 0;
+}
+.fold.power[open] {
+  display: grid;
+  gap: 10px;
+}
+table.mini {
+  font-size: 0.78rem;
+}
+table.mini td,
+table.mini th {
+  padding: 6px 8px 6px 0;
+}
+table.mini tr.na td {
+  color: var(--muted);
+}
+table.mini td.wet {
+  color: var(--accent);
+}
+table.mini small {
+  display: inline;
+  color: var(--muted);
 }

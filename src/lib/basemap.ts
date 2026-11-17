@@ -10,7 +10,10 @@ interface RawBasemap {
   isar: LatLon[][];
   lakes: LatLon[][];
   motorways: { ref: string; lines: LatLon[][] }[];
+  roads?: LatLon[][];
   places: { name: string; lat: number; lon: number }[];
+  suburbs?: { name: string; lat: number; lon: number }[];
+  anchor?: { name: string; lat: number; lon: number };
 }
 
 const raw = data as unknown as RawBasemap;
@@ -21,8 +24,16 @@ export const BASEMAP = {
   isar: proj(raw.isar),
   lakes: proj(raw.lakes),
   motorways: raw.motorways.map((m) => ({ ref: m.ref, lines: proj(m.lines) })),
+  roads: proj(raw.roads ?? []),
   places: raw.places.map((p) => ({ name: p.name, at: toKm([p.lat, p.lon]) as Km })),
+  suburbs: (raw.suburbs ?? []).map((p) => ({ name: p.name, at: toKm([p.lat, p.lon]) as Km })),
 };
+
+/** U-Bahn Schwanthalerhöhe – reference point for the commute check (fallback: approx. position). */
+export const ANCHOR: { name: string; at: Km; lat: number; lon: number } = (() => {
+  const a = raw.anchor ?? { name: 'U Schwanthalerhöhe', lat: 48.1336, lon: 11.5403 };
+  return { ...a, at: toKm([a.lat, a.lon]) };
+})();
 
 export interface MapColors {
   land: string;
@@ -75,17 +86,27 @@ export function drawUnder(ctx: CanvasRenderingContext2D, view: View, c: MapColor
   }
   ctx.fill('evenodd');
 
-  ctx.strokeStyle = c.road;
-  ctx.lineWidth = view.size > 500 ? 1.4 : 1.1;
+  const zoomed = view.extent <= 25;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
+  if (zoomed) {
+    ctx.strokeStyle = c.road;
+    ctx.globalAlpha = 0.75;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    for (const l of BASEMAP.roads) trace(ctx, l, px);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.strokeStyle = c.road;
+  ctx.lineWidth = zoomed ? 1.8 : view.size > 500 ? 1.4 : 1.1;
   ctx.beginPath();
   for (const m of BASEMAP.motorways) for (const l of m.lines) trace(ctx, l, px);
   ctx.stroke();
 }
 
 /** Layer above the rain: Isar, city outline, distance rings, places. Keeps orientation readable. */
-export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors) {
+export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors, route?: Km[] | null) {
   const px = projector(view);
   const scale = view.size / (2 * view.extent);
   const small = view.size < 420;
@@ -113,7 +134,7 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
   ctx.setLineDash([2, 4]);
   ctx.strokeStyle = c.line;
   ctx.lineWidth = 1;
-  const rings = view.extent > 45 ? [10, 25, 50] : [10, 25];
+  const rings = view.extent <= 20 ? [5, 10] : view.extent > 45 ? [10, 25, 50] : [10, 25];
   for (const r of rings) {
     ctx.beginPath();
     ctx.arc(cx, cy, r * scale, 0, Math.PI * 2);
@@ -132,6 +153,16 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
   // Ring labels sit due south-west, where no place labels are drawn.
   for (const r of rings) label(`${r} km`, cx - r * scale * 0.71 - 30, cy + r * scale * 0.71 + 12, 500, 9, c.label);
 
+  if (view.extent <= 25) {
+    for (const p of BASEMAP.suburbs) {
+      const [x, y] = px(p.at);
+      if (x < 10 || y < 10 || x > view.size - 10 || y > view.size - 10) continue;
+      ctx.textAlign = 'center';
+      label(p.name, x, y + 3, 500, small ? 9 : 10, c.label);
+      ctx.textAlign = 'start';
+    }
+  }
+
   for (const p of BASEMAP.places) {
     const [x, y] = px(p.at);
     if (x < 0 || y < 0 || x > view.size || y > view.size) continue;
@@ -140,6 +171,31 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
     ctx.arc(x, y, 1.8, 0, Math.PI * 2);
     ctx.fill();
     label(p.name, x + 4, y + 3, 500, small ? 9 : 11, c.label);
+  }
+
+  if (route && route.length > 1) {
+    ctx.strokeStyle = c.land;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    trace(ctx, route, px);
+    ctx.stroke();
+    ctx.strokeStyle = c.strong;
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    trace(ctx, route, px);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    for (const [i, p] of [route[0], route[route.length - 1]].entries()) {
+      const [x, y] = px(p);
+      ctx.beginPath();
+      ctx.arc(x, y, i === 0 ? 3.5 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = i === 0 ? c.land : c.strong;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = c.strong;
+      ctx.stroke();
+    }
   }
 
   ctx.beginPath();

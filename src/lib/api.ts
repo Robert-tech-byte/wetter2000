@@ -176,3 +176,23 @@ export function fetchRadar(distanceMeters = 80000): Promise<RadarResponse> {
     `${BRIGHT_SKY}/radar?lat=${LOCATION.lat}&lon=${LOCATION.lon}&distance=${distanceMeters}&format=plain`,
   );
 }
+
+// ---------- 15-minute model precipitation (ICON-D2) ----------
+
+export interface Minutely15 {
+  minutely_15: { time: string[]; precipitation: (number | null)[] };
+}
+
+/** ICON-D2 precipitation in 15-minute steps (mm per 15 min), local time keys. */
+export function fetchMinutely15(lat: number, lon: number): Promise<Minutely15> {
+  const p = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lon),
+    timezone: LOCATION.timezone,
+    models: 'icon_d2',
+    minutely_15: 'precipitation',
+    past_minutely_15: '1',
+    forecast_minutely_15: '16',
+  });
+  return getJson(`${OPEN_METEO}?${p}`);
+}

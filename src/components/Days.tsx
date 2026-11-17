@@ -1,14 +1,13 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
-import { analyzeDays, CONFIDENCE_WORD, dayConfidence, rainConsensus, type DayAgreement } from '../lib/agreement';
+import { useMemo } from 'react';
+import { analyzeDays, dayConfidence, median, rainConsensus, type DayAgreement, type ConfidenceLevel } from '../lib/agreement';
 import type { EcmwfForecast, MemberSet } from '../lib/api';
 import { AGREEMENT_DAYS, EPS_MODEL, HIRES_MODELS, TEMP_TOLERANCE } from '../lib/config';
 import { fmt0, fmt1, mm, pct } from '../lib/format';
 import { formatDayShort, hhmm, localHourKey, relativeDayName } from '../lib/time';
 import { describeWeather } from '../lib/weatherCodes';
 import { ConfidenceDots } from './Confidence';
+import { DayChart, type HourPoint } from './DayChart';
 import { DayRow, type Scale } from './DayRow';
-
-const ModelDetails = lazy(() => import('./ModelDetails'));
 
 interface Props {
   ecmwf: EcmwfForecast | null;
@@ -16,66 +15,156 @@ interface Props {
   eps: MemberSet | null;
 }
 
-const span = (r: [number, number] | null, f: (v: number) => string) => (r ? `${f(r[0])} bis ${f(r[1])}` : '–');
+const level = (v: number | null): ConfidenceLevel | null => (v == null ? null : v >= 0.8 ? 3 : v >= 0.5 ? 2 : 1);
+const WORD: Record<ConfidenceLevel, string> = { 3: 'sicher', 2: 'ziemlich sicher', 1: 'unsicher' };
+const span = (r: [number, number] | null, f: (v: number) => string) => (r ? `${f(r[0])} – ${f(r[1])}` : '–');
 
-function ModelGrid({ day }: { day: DayAgreement }) {
+/** Hourly median (+ spread) of all models for one calendar day. */
+function modelHours(set: MemberSet, date: string): HourPoint[] {
+  const out: HourPoint[] = [];
+  set.time.forEach((t, i) => {
+    if (!t.startsWith(date)) return;
+    const temps = set.members.map((m) => m.temperature[i]).filter((v): v is number => v != null);
+    const rains = set.members.map((m) => m.precipitation[i]).filter((v): v is number => v != null);
+    out.push({
+      time: t,
+      temp: temps.length ? median(temps) : null,
+      lo: temps.length > 1 ? Math.min(...temps) : null,
+      hi: temps.length > 1 ? Math.max(...temps) : null,
+      rain: rains.length ? median(rains) : null,
+    });
+  });
+  return out;
+}
+
+function ecmwfHours(e: EcmwfForecast, date: string): HourPoint[] {
+  return e.hourly.time
+    .map((t, i) => ({ time: t, temp: e.hourly.temperature_2m[i], rain: e.hourly.precipitation[i] }))
+    .filter((p) => p.time.startsWith(date));
+}
+
+function Certainty({ day }: { day: DayAgreement }) {
+  const n = day.members.length;
+  const inTol = day.tempAgreement != null ? Math.round(day.tempAgreement * n) : null;
+  const rainC = rainConsensus(day.rainProbability);
+  const lt = level(day.tempAgreement);
+  const lr = level(rainC);
   return (
-    <div className="models" role="list" aria-label="Regen je Modell">
-      {HIRES_MODELS.map((m) => {
-        const s = day.members.find((x) => x.id === m.id);
-        const state = !s ? 'na' : s.rains ? 'rain' : 'dry';
-        const text = !s ? 'reicht nicht so weit' : s.rains ? `Regen, ${mm(s.rainSum)}` : 'trocken';
-        return <i key={m.id} role="listitem" className={state} title={`${m.name}: ${text}`} aria-label={`${m.name}: ${text}`} />;
-      })}
-    </div>
+    <dl className="certainty">
+      <div>
+        <dt>Temperatur</dt>
+        <dd>
+          <span className="cert-line">
+            <ConfidenceDots level={lt} />
+            <strong>{lt ? WORD[lt] : '–'}</strong>
+          </span>
+          <span className="cert-why">
+            {inTol ?? '–'} von {n} Modellen innerhalb ±{fmt1(TEMP_TOLERANCE)} °C
+          </span>
+        </dd>
+      </div>
+      <div>
+        <dt>Regen</dt>
+        <dd>
+          <span className="cert-line">
+            <ConfidenceDots level={lr} />
+            <strong>{lr ? WORD[lr] : '–'}</strong>
+          </span>
+          <span className="cert-why">
+            {day.rainMembers === 0
+              ? `alle ${n} Modelle trocken`
+              : day.rainMembers === n
+                ? `alle ${n} Modelle mit Regen`
+                : `${day.rainMembers} von ${n} Modellen mit Regen`}
+          </span>
+        </dd>
+      </div>
+    </dl>
   );
 }
 
-function AgreementDetail({ day, eps }: { day: DayAgreement; eps: DayAgreement | null }) {
-  const conf = dayConfidence(day);
-  const n = day.members.length;
+function PowerDetails({
+  day,
+  eps,
+  basics,
+}: {
+  day: DayAgreement | null;
+  eps: DayAgreement | null;
+  basics: { rain: number | null; gust: number | null; sunrise: string; sunset: string };
+}) {
   return (
-    <div className="agree">
-      <p className="agree-head">
-        <strong>{conf ? CONFIDENCE_WORD[conf.level] : 'keine Aussage'}</strong>
-        <span>
-          {n} von {HIRES_MODELS.length} Modellen
-        </span>
-      </p>
+    <details className="fold power">
+      <summary>Details</summary>
       <dl className="kv">
         <div>
-          <dt>Temperatur ±{fmt1(TEMP_TOLERANCE)} °C</dt>
-          <dd>{pct(day.tempAgreement)} einig</dd>
+          <dt>Regen (ECMWF)</dt>
+          <dd>{mm(basics.rain)}</dd>
         </div>
         <div>
-          <dt>Regen</dt>
+          <dt>Böen bis</dt>
+          <dd>{fmt0(basics.gust)} km/h</dd>
+        </div>
+        <div>
+          <dt>Sonne</dt>
           <dd>
-            {day.rainMembers} von {n} Modellen
-            <span className="sub">{pct(rainConsensus(day.rainProbability))} einig</span>
+            {hhmm(basics.sunrise)} – {hhmm(basics.sunset)}
           </dd>
         </div>
-        <div>
-          <dt>Höchstwert</dt>
-          <dd>{span(day.tMaxRange, (v) => `${fmt1(v)}°`)}</dd>
-        </div>
-        <div>
-          <dt>Regenmenge</dt>
-          <dd>{span(day.rainSumRange, (v) => fmt1(v))} mm</dd>
-        </div>
+        {day && (
+          <>
+            <div>
+              <dt>Höchstwert Modelle</dt>
+              <dd>{span(day.tMaxRange, (v) => `${fmt1(v)}°`)}</dd>
+            </div>
+            <div>
+              <dt>Tiefstwert Modelle</dt>
+              <dd>{span(day.tMinRange, (v) => `${fmt1(v)}°`)}</dd>
+            </div>
+            <div>
+              <dt>Regenmenge Modelle</dt>
+              <dd>{span(day.rainSumRange, (v) => fmt1(v))} mm</dd>
+            </div>
+          </>
+        )}
       </dl>
-      <ModelGrid day={day} />
-      <p className="note">
-        {EPS_MODEL.name}:{' '}
-        {eps && eps.members.length
-          ? `Temperatur ${pct(eps.tempAgreement)} einig, Regen in ${pct(eps.rainProbability)} der ${eps.members.length} Läufe`
-          : 'reicht nicht bis zu diesem Tag'}
-      </p>
-    </div>
+      {day && (
+        <>
+          <table className="mini">
+            <thead>
+              <tr>
+                <th>Modell</th>
+                <th>Tief / Hoch</th>
+                <th>Regen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {HIRES_MODELS.map((m) => {
+                const s = day.members.find((x) => x.id === m.id);
+                return (
+                  <tr key={m.id} className={s ? '' : 'na'}>
+                    <td>
+                      {m.name} <small>{String(m.resolutionKm).replace('.', ',')} km</small>
+                    </td>
+                    <td>{s ? `${fmt1(s.tMin)}° / ${fmt1(s.tMax)}°` : 'reicht nicht so weit'}</td>
+                    <td className={s?.rains ? 'wet' : ''}>{s ? mm(s.rainSum) : ''}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="note">
+            {EPS_MODEL.name} ({EPS_MODEL.members} Läufe):{' '}
+            {eps && eps.members.length
+              ? `Temperatur ${pct(eps.tempAgreement)} innerhalb ±${fmt1(TEMP_TOLERANCE)} °C, Regen in ${pct(eps.rainProbability)} der Läufe.`
+              : 'reicht nicht bis zu diesem Tag.'}
+          </p>
+        </>
+      )}
+    </details>
   );
 }
 
 export function Days({ ecmwf, hires, eps }: Props) {
-  const [showDetails, setShowDetails] = useState(false);
   const nowKey = localHourKey();
   const today = nowKey.slice(0, 10);
 
@@ -83,17 +172,13 @@ export function Days({ ecmwf, hires, eps }: Props) {
     () => (hires ? analyzeDays(hires.time, hires.members, nowKey, AGREEMENT_DAYS) : []),
     [hires, nowKey],
   );
-  const epsDays = useMemo(
-    () => (eps ? analyzeDays(eps.time, eps.members, nowKey, AGREEMENT_DAYS) : []),
-    [eps, nowKey],
-  );
+  const epsDays = useMemo(() => (eps ? analyzeDays(eps.time, eps.members, nowKey, AGREEMENT_DAYS) : []), [eps, nowKey]);
 
   if (!ecmwf) return null;
   const d = ecmwf.daily;
   const days = d.time
     .map((date, i) => ({
       date,
-      i,
       lo: d.temperature_2m_min[i],
       hi: d.temperature_2m_max[i],
       rain: d.precipitation_sum[i],
@@ -105,89 +190,42 @@ export function Days({ ecmwf, hires, eps }: Props) {
     .filter((x): x is typeof x & { lo: number; hi: number } => x.lo != null && x.hi != null);
   const scale: Scale = { lo: Math.min(...days.map((x) => x.lo)), hi: Math.max(...days.map((x) => x.hi)) };
 
-  const basics = (x: (typeof days)[number]) => (
-    <dl className="kv">
-      <div>
-        <dt>Regen</dt>
-        <dd>{mm(x.rain)}</dd>
-      </div>
-      <div>
-        <dt>Böen bis</dt>
-        <dd>{fmt0(x.gust)} km/h</dd>
-      </div>
-      <div>
-        <dt>Sonne</dt>
-        <dd>
-          {hhmm(x.sunrise)} – {hhmm(x.sunset)}
-        </dd>
-      </div>
-      <div>
-        <dt>Wetter</dt>
-        <dd>{x.cond.text}</dd>
-      </div>
-    </dl>
-  );
-
-  const next = days.slice(0, AGREEMENT_DAYS);
-  const later = days.slice(AGREEMENT_DAYS);
-
   return (
-    <>
-      <section className="block" aria-labelledby="next-title">
-        <h2 id="next-title" className="block-title">
-          Nächste Tage
-        </h2>
-        {next.map((x, k) => {
-          const a = agreement.find((g) => g.date === x.date) ?? null;
-          const conf = a ? dayConfidence(a) : null;
-          return (
-            <DayRow
-              key={x.date}
-              name={relativeDayName(x.date, today)}
-              date=""
-              cond={x.cond}
-              lo={x.lo}
-              hi={x.hi}
-              scale={scale}
-              open={k === 0}
-              trailing={<ConfidenceDots level={conf?.level ?? null} models={a?.members.length} />}
-            >
-              {basics(x)}
-              {a && <AgreementDetail day={a} eps={epsDays.find((e) => e.date === x.date) ?? null} />}
-            </DayRow>
-          );
-        })}
-        {hires && (
-          <details className="fold" onToggle={(e) => setShowDetails((e.target as HTMLDetailsElement).open)}>
-            <summary>Stündlicher Verlauf &amp; Einzelmodelle</summary>
-            {showDetails && (
-              <Suspense fallback={<p className="note">Wird geladen …</p>}>
-                <ModelDetails hires={hires} eps={eps} days={agreement} />
-              </Suspense>
-            )}
-          </details>
-        )}
-      </section>
-
-      <section className="block" aria-labelledby="later-title">
-        <h2 id="later-title" className="block-title">
-          Bis {formatDayShort(days[days.length - 1].date).split(' ')[1]} · ECMWF
-        </h2>
-        {later.map((x) => (
+    <section className="block" aria-labelledby="days-title">
+      <h2 id="days-title" className="block-title">
+        Tage
+      </h2>
+      {days.map((x, k) => {
+        const a = k < AGREEMENT_DAYS ? (agreement.find((g) => g.date === x.date) ?? null) : null;
+        const conf = a ? dayConfidence(a) : null;
+        const hours = a && hires ? modelHours(hires, x.date) : ecmwfHours(ecmwf, x.date);
+        return (
           <DayRow
             key={x.date}
             name={relativeDayName(x.date, today)}
-            date={formatDayShort(x.date).split(' ')[1]}
+            date={k < AGREEMENT_DAYS ? '' : formatDayShort(x.date).split(' ')[1]}
             cond={x.cond}
             lo={x.lo}
             hi={x.hi}
             scale={scale}
-            trailing={<span className="rain-amount">{(x.rain ?? 0) >= 0.1 ? `${fmt1(x.rain)} mm` : ''}</span>}
+            trailing={
+              a ? (
+                <ConfidenceDots level={conf?.level ?? null} models={a.members.length} />
+              ) : (
+                <span className="rain-amount">{(x.rain ?? 0) >= 0.1 ? `${fmt1(x.rain)} mm` : ''}</span>
+              )
+            }
           >
-            {basics(x)}
+            <DayChart points={hours} nowKey={x.date === today ? nowKey : undefined} />
+            {a ? (
+              <Certainty day={a} />
+            ) : (
+              <p className="note">ECMWF IFS. Wie sicher die Vorhersage ist, wird nur für die ersten 3 Tage berechnet.</p>
+            )}
+            <PowerDetails day={a} eps={epsDays.find((e) => e.date === x.date) ?? null} basics={x} />
           </DayRow>
-        ))}
-      </section>
-    </>
+        );
+      })}
+    </section>
   );
 }

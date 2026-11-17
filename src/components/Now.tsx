@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { CurrentObservation, EcmwfForecast } from '../lib/api';
 import { fmt0, fmt1, mm } from '../lib/format';
 import { clock, hhmm } from '../lib/time';
@@ -12,6 +13,7 @@ export function Now({ current, ecmwf }: { current: CurrentObservation | null; ec
 
   const t = obs?.temperature ?? model?.temperature_2m ?? null;
   const cond = describeBrightSkyIcon(obs?.icon) ?? describeWeather(model?.weather_code);
+  const [more, setMore] = useState(false);
   const hi = d?.temperature_2m_max[0];
   const lo = d?.temperature_2m_min[0];
 
@@ -22,13 +24,13 @@ export function Now({ current, ecmwf }: { current: CurrentObservation | null; ec
         <WeatherIcon name={cond.icon} className="now-icon" />
       </div>
       <p className="now-cond">{cond.text}</p>
-      {hi != null && lo != null && (
-        <p className="now-hl">
-          H {fmt0(hi)}° · T {fmt0(lo)}°
-        </p>
-      )}
-      <details className="fold">
-        <summary>Mehr zu jetzt</summary>
+      <div className="now-hl">
+        <span>{hi != null && lo != null ? `H ${fmt0(hi)}° · T ${fmt0(lo)}°` : ''}</span>
+        <button type="button" className="toggle" aria-expanded={more} aria-controls="now-more" onClick={() => setMore((m) => !m)}>
+          Mehr zu jetzt
+        </button>
+      </div>
+      <div id="now-more" className="now-more" hidden={!more}>
         <dl className="kv">
           {model && (
             <div>
@@ -78,7 +80,7 @@ export function Now({ current, ecmwf }: { current: CurrentObservation | null; ec
               ? `Keine Stationsmessung verfügbar, Modellwert ECMWF IFS (${hhmm(model.time)} Uhr).`
               : ''}
         </p>
-      </details>
+      </div>
     </section>
   );
 }

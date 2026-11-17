@@ -15,17 +15,25 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             einen Tag, wenn es mindestens {Math.round(MIN_COVERAGE * 100)} % der Stunden liefert. Temperatur: Anteil der
             Modelle, die stündlich höchstens ±{fmt1(TEMP_TOLERANCE)} °C vom Median abweichen. Regen: Anteil der Modelle
             mit mindestens einer Stunde ≥ {fmt1(RAIN_THRESHOLD)} mm; „einig“ heißt, wie klar die Mehrheit für Regen
-            oder trocken ist. Die Punkte zeigen den schwächeren der beiden Werte: ●●● ab 80 %, ●●○ ab 50 %, sonst ●○○.
-            Eine kleine Zahl daneben bedeutet, dass weniger als 4 Modelle den Tag abdecken.
+            oder trocken ist. In der Tageszeile zeigen die Punkte den schwächeren der beiden Werte: ●●● ab 80 %, ●●○ ab 50 %,
+            sonst ●○○. Eine kleine Zahl daneben bedeutet, dass weniger als 4 Modelle den Tag abdecken. Das Diagramm
+            zeigt den Median aller Modelle, die Fläche ihre Spanne.
           </p>
           <p>
             {EPS_MODEL.name} ({EPS_MODEL.members} Läufe) wird gleich berechnet und separat angezeigt. Das Ergebnis ist
             eine Modell-Übereinstimmung, keine kalibrierte Wahrscheinlichkeit.
           </p>
+          <h3>Komme ich trocken an?</h3>
+          <p>
+            Strecke: gerade Linie von der U-Bahn Schwanthalerhöhe in die gewählte Richtung, Länge aus Fahrzeit und
+            20 km/h. Für jede Minute der Fahrt wird der Regen an der Stelle gelesen, an der man dann ungefähr ist. Bis
+            zum Ende des Nowcasts (ca. +60 min) mit dem DWD-Radar in 5-Minuten-Schritten, danach mit ICON-D2 in
+            15-Minuten-Schritten (Streckenmitte, ungenauer). „Trocken“ heißt unter 0,05 mm auf der ganzen Fahrt.
+          </p>
           <h3>Regenradar</h3>
           <p>
-            DWD-Radarkomposit (1 km, alle 5 Minuten): die letzte Stunde gemessen, danach die DWD-Vorhersage für 60
-            Minuten. Zwischen den Bildern wird weich überblendet.
+            DWD-Radarkomposit in 1-km-Blöcken, alle 5 Minuten: die letzte Stunde gemessen, danach die DWD-Vorhersage
+            für 60 Minuten. Zwischen den Bildern wird überblendet.
           </p>
           <Legend />
           <h3>Daten</h3>

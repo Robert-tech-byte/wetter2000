@@ -11,3 +11,8 @@ export type Km = [number, number];
 export function toKm([lat, lon]: LatLon): Km {
   return [(lon - LOCATION.lon) * KM_PER_DEG_LON, (lat - LOCATION.lat) * KM_PER_DEG_LAT];
 }
+
+/** [east, north] km → [lat, lon]. */
+export function fromKm([x, y]: Km): LatLon {
+  return [LOCATION.lat + y / KM_PER_DEG_LAT, LOCATION.lon + x / KM_PER_DEG_LON];
+}
