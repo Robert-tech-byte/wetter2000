@@ -878,7 +878,53 @@ table.mini small {
 
 /* --- Stündlich --- */
 .hourly {
+  position: relative;
   margin: 0 calc(-1 * max(16px, env(safe-area-inset-left)));
+}
+/* Soft edge where more hours are hidden */
+.hourly::before,
+.hourly::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 14px;
+  width: 28px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 1;
+}
+.hourly::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg), transparent);
+}
+.hourly::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--bg), transparent);
+}
+.hourly.more-left::before,
+.hourly.more-right::after {
+  opacity: 1;
+}
+.scroll-ind {
+  position: relative;
+  height: 3px;
+  margin: 4px max(16px, env(safe-area-inset-left)) 0;
+  border-radius: 2px;
+  background: var(--line);
+}
+.scroll-ind i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  background: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hourly::before,
+  .hourly::after {
+    transition: none;
+  }
 }
 .hours {
   list-style: none;
