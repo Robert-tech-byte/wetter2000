@@ -169,11 +169,11 @@ export function Commute({ radar, onRoute }: Props) {
               )}
             </span>
           </div>
-          <p className="setup-q">Wie lange fährst du?</p>
+          <p className="setup-q">Wie lange fährst du (Minuten)?</p>
           <div className="seg wide" role="radiogroup" aria-label="Fahrzeit">
             {DURATIONS.map((m) => (
-              <button key={m} type="button" role="radio" aria-checked={choice.duration === m} onClick={() => update({ duration: m })}>
-                {m} min
+              <button key={m} type="button" role="radio" aria-checked={choice.duration === m} aria-label={`${m} Minuten`} onClick={() => update({ duration: m })}>
+                {m}
               </button>
             ))}
           </div>

@@ -4,7 +4,7 @@ import { kmToGrid, sample, type RadarData } from './radar';
 
 /** Average cycling speed. */
 export const SPEED_KMH = 20;
-export const DURATIONS = [10, 20, 30] as const;
+export const DURATIONS = [10, 20, 30, 40] as const;
 export type Duration = (typeof DURATIONS)[number];
 
 export const DIRECTIONS = [

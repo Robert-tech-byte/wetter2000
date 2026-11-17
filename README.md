@@ -6,7 +6,7 @@ Minimalistische Wettervorhersage für München – React + TypeScript + Vite, ge
 
 Eine Spalte, drei Ebenen: Auf einen Blick steht die Antwort, Antippen zeigt die Begründung, ganz unten liegen die Details.
 
-- **Komme ich trocken an?** (ganz oben): Arbeitsort (U Schwanthalerhöhe oder U Westfriedhof), Hin oder Heim, Richtung des Zuhauses per Kompass, Fahrzeit 10/20/30 min (20 km/h, direkte Linie). Prüft die Fahrt mit Radar + Nowcast entlang der Strecke und schlägt sonst die trockenste Abfahrt vor; nach dem Nowcast mit ICON-D2-15-Minuten-Werten. Es wird nichts gespeichert; jeder Aufruf beginnt mit der Auswahl.
+- **Komme ich trocken an?** (ganz oben): Arbeitsort (U Schwanthalerhöhe oder U Westfriedhof), Hin oder Heim, Richtung des Zuhauses per Kompass, Fahrzeit 10/20/30/40 min (20 km/h, direkte Linie). Prüft die Fahrt mit Radar + Nowcast entlang der Strecke und schlägt sonst die trockenste Abfahrt vor; nach dem Nowcast mit ICON-D2-15-Minuten-Werten. Es wird nichts gespeichert; jeder Aufruf beginnt mit der Auswahl.
 - **Jetzt:** Temperatur der DWD-Station München-Stadt (Bright Sky), Wetterlage, Hoch/Tief. Aufklappbar: gefühlte Temperatur, Wind, Luftdruck, Sonne.
 - **Nächste 12 Stunden:** seitlich wischbare Leiste mit Symbol, Temperatur und Regenwahrscheinlichkeit (Median der 7 Modelle, Bewölkung für das Symbol). Die erste Karte „Jetzt“ nutzt Messwert und Radar-Nowcast. Antippen einer Stunde zeigt Details: Temperatur mit Modellspanne, gefühlte Temperatur, Regen, Wind/Böen mit Richtung, Bewölkung, Luftfeuchte und Treffsicherheit.
 - **Regen in der nächsten Stunde:** ein Satz und ein Streifen mit 12 Fünf-Minuten-Werten.

@@ -66,4 +66,11 @@ describe('commute', () => {
     expect(opts[0].mm).toBeCloseTo(1, 5); // 2 mm/h for 30 min
     expect(isDry(opts.find((o) => o.depart === 90)!)).toBe(true);
   });
+
+  it('40-minute trip: radar covers departures up to +20 min', () => {
+    const opts = radarOptions(radar(() => 0), route([0, 0], 'S', 40, 'hin'), 40, now);
+    expect(opts.map((o) => o.depart)).toEqual([0, 5, 10, 15, 20]);
+    const [home] = route([0, 0], 'S', 40, 'hin');
+    expect(home[1]).toBeCloseTo(-40 / 3); // 13,3 km at 20 km/h
+  });
 });
