@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MemberSet } from './api';
-import { iconFor, nextHours } from './hourly';
+import { compass, hourDetail, iconFor, meanDirection, nextHours } from './hourly';
 
 const time = Array.from({ length: 24 }, (_, h) => `2026-11-17T${String(h).padStart(2, '0')}:00`);
 const member = (id: string, t: number, r: number, c: number) => ({
@@ -30,5 +30,32 @@ describe('hourly', () => {
     expect(cards[1].rainProbability).toBeCloseTo(2 / 3);
     expect(cards[1].rainMm).toBeCloseTo(0.2);
     expect(cards[12].label).toBe('20 Uhr');
+  });
+
+  it('mean wind direction wraps around north', () => {
+    expect(meanDirection([350, 10])).toBeCloseTo(0, 5);
+    expect(compass(meanDirection([80, 100])!)).toBe('O');
+    expect(compass(225)).toBe('SW');
+  });
+
+  it('hour details from models with partial extra data', () => {
+    const m = (id: string, t: number, r: number, wind?: number, dir?: number) => ({
+      id,
+      label: id,
+      temperature: time.map(() => t),
+      precipitation: time.map(() => r),
+      cloud: time.map(() => 80),
+      extra: wind == null ? {} : { wind_speed_10m: time.map(() => wind), wind_direction_10m: time.map(() => dir ?? 0) },
+    });
+    const set: MemberSet = { time, members: [m('a', 10, 0, 10, 270), m('b', 11, 0.5, 20, 250), m('c', 14, 0.3)] };
+    const d = hourDetail(set, 5);
+    expect(d.n).toBe(3);
+    expect(d.temp).toBe(11);
+    expect(d.tempRange).toEqual([10, 14]);
+    expect(d.rainMembers).toBe(2);
+    expect(d.wind).toBe(15);
+    expect(compass(d.direction!)).toBe('W');
+    expect(d.humidity).toBeNull();
+    expect(d.tempAgreement).toBeCloseTo(2 / 3);
   });
 });

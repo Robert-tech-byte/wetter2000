@@ -1,5 +1,5 @@
 import type { IconName } from '../components/Icon';
-import { median } from './agreement';
+import { hourAgreement, median, rainConsensus, type ExtraVar } from './agreement';
 import type { EcmwfForecast, MemberSet } from './api';
 import { RAIN_THRESHOLD } from './config';
 import { pointRateAt, type RadarData } from './radar';
@@ -15,6 +15,8 @@ export interface HourCard {
   /** Expected precipitation in mm for this hour (median of models, or radar nowcast). */
   rainMm: number | null;
   source: 'radar' | 'modelle';
+  /** Index into the model time axis, for the details. */
+  index: number;
 }
 
 const nums = (a: (number | null | undefined)[]) => a.filter((v): v is number => typeof v === 'number');
@@ -89,7 +91,71 @@ export function nextHours(
       rainProbability,
       rainMm,
       source,
+      index: i,
     });
   }
   return cards;
+}
+
+export interface HourDetail {
+  n: number;
+  temp: number | null;
+  tempRange: [number, number] | null;
+  apparent: number | null;
+  rainProbability: number | null;
+  rainMembers: number;
+  rainMm: number | null;
+  wind: number | null;
+  gust: number | null;
+  /** Mean wind direction in degrees (vector average), null if unknown. */
+  direction: number | null;
+  cloud: number | null;
+  humidity: number | null;
+  /** Share of models within ±tolerance of the median. */
+  tempAgreement: number | null;
+  /** How clearly the models agree on rain yes/no (0.5–1). */
+  rainConsensus: number | null;
+}
+
+/** Circular mean of directions in degrees. */
+export function meanDirection(deg: number[]): number | null {
+  if (!deg.length) return null;
+  let x = 0;
+  let y = 0;
+  for (const d of deg) {
+    x += Math.sin((d * Math.PI) / 180);
+    y += Math.cos((d * Math.PI) / 180);
+  }
+  if (Math.hypot(x, y) < 1e-6) return null;
+  return ((Math.atan2(x, y) * 180) / Math.PI + 360) % 360;
+}
+
+const COMPASS = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
+export const compass = (deg: number) => COMPASS[Math.round(deg / 45) % 8];
+
+/** Median values and agreement of all models for one hour. */
+export function hourDetail(set: MemberSet, i: number): HourDetail {
+  const ex = (v: ExtraVar) => nums(set.members.map((m) => m.extra?.[v]?.[i]));
+  const temps = nums(set.members.map((m) => m.temperature[i]));
+  const rains = nums(set.members.map((m) => m.precipitation[i]));
+  const clouds = nums(set.members.map((m) => m.cloud?.[i]));
+  const med = (a: number[]) => (a.length ? median(a) : null);
+  const a = hourAgreement(set.time, set.members, i);
+  const rainMembers = rains.filter((r) => r >= RAIN_THRESHOLD).length;
+  return {
+    n: temps.length,
+    temp: med(temps),
+    tempRange: temps.length > 1 ? [Math.min(...temps), Math.max(...temps)] : null,
+    apparent: med(ex('apparent_temperature')),
+    rainProbability: rains.length ? rainMembers / rains.length : null,
+    rainMembers,
+    rainMm: med(rains),
+    wind: med(ex('wind_speed_10m')),
+    gust: med(ex('wind_gusts_10m')),
+    direction: meanDirection(ex('wind_direction_10m')),
+    cloud: med(clouds),
+    humidity: med(ex('relative_humidity_2m')),
+    tempAgreement: temps.length > 1 ? a.tempAgreement : null,
+    rainConsensus: rainConsensus(rains.length ? rainMembers / rains.length : null),
+  };
 }

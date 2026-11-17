@@ -1,5 +1,14 @@
 import { MIN_COVERAGE, RAIN_THRESHOLD, TEMP_TOLERANCE } from './config';
 
+export const EXTRA_VARS = [
+  'apparent_temperature',
+  'wind_speed_10m',
+  'wind_gusts_10m',
+  'wind_direction_10m',
+  'relative_humidity_2m',
+] as const;
+export type ExtraVar = (typeof EXTRA_VARS)[number];
+
 export interface Member {
   id: string;
   label: string;
@@ -7,6 +16,8 @@ export interface Member {
   precipitation: (number | null)[];
   /** Cloud cover in % (optional, only for the high-resolution models). */
   cloud?: (number | null)[];
+  /** Further hourly variables for the hour details (high-resolution models only). */
+  extra?: Partial<Record<ExtraVar, (number | null)[]>>;
 }
 
 export interface MemberDayStats {

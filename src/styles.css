@@ -143,9 +143,8 @@ button {
   font-variant-numeric: tabular-nums;
 }
 .now-icon {
-  width: 52px;
-  height: 52px;
-  color: var(--muted);
+  width: 56px;
+  height: 56px;
   margin-top: 8px;
 }
 .now-cond,
@@ -202,6 +201,7 @@ button {
 }
 .kv > div {
   display: grid;
+  align-content: start;
   min-width: 0;
 }
 .kv dt {
@@ -944,16 +944,25 @@ table.mini small {
 .hours li {
   flex: 0 0 58px;
   scroll-snap-align: start;
+}
+.hours li > button {
+  width: 100%;
   display: grid;
   justify-items: center;
   gap: 4px;
   padding: 10px 4px;
   border-radius: 14px;
   border: 1px solid transparent;
+  background: none;
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
 }
-.hours li.now {
+.hours li.now > button {
   border-color: var(--line);
+  background: var(--surface);
+}
+.hours li > button[aria-pressed='true'] {
+  border-color: var(--fg);
   background: var(--surface);
 }
 .h-time {
@@ -1021,4 +1030,54 @@ table.mini small {
 .day-chart .grid.zero {
   stroke: var(--muted);
   opacity: 0.6;
+}
+
+/* --- Stunden-Details --- */
+.hour-detail {
+  margin: 10px max(16px, env(safe-area-inset-left)) 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  display: grid;
+  gap: 12px;
+}
+.hd-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hd-head .note {
+  flex: 1;
+}
+.round.small {
+  width: 28px;
+  height: 28px;
+}
+.round.small svg {
+  width: 11px;
+  height: 11px;
+}
+.hd-conf {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.85rem;
+}
+.hd-conf div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.hd-conf dt {
+  color: var(--muted);
+}
+.hd-conf dd {
+  margin: 0;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
 }

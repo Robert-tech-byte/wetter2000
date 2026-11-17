@@ -1,5 +1,5 @@
 import { AGREEMENT_DAYS, EPS_MODEL, FORECAST_DAYS, HIRES_MODELS, LOCATION } from './config';
-import type { Member } from './agreement';
+import { EXTRA_VARS, type Member } from './agreement';
 
 const OPEN_METEO = 'https://api.open-meteo.com/v1/forecast';
 const OPEN_METEO_ENSEMBLE = 'https://ensemble-api.open-meteo.com/v1/ensemble';
@@ -98,7 +98,7 @@ export async function fetchHiresModels(): Promise<MemberSet> {
     `${OPEN_METEO}?${params({
       models: HIRES_MODELS.map((m) => m.id).join(','),
       forecast_days: AGREEMENT_DAYS,
-      hourly: 'temperature_2m,precipitation,cloud_cover',
+      hourly: ['temperature_2m', 'precipitation', 'cloud_cover', ...EXTRA_VARS].join(','),
     })}`,
   );
   const h = data.hourly;
@@ -110,6 +110,7 @@ export async function fetchHiresModels(): Promise<MemberSet> {
       temperature: (h[`temperature_2m_${m.id}`] as (number | null)[]) ?? [],
       precipitation: (h[`precipitation_${m.id}`] as (number | null)[]) ?? [],
       cloud: (h[`cloud_cover_${m.id}`] as (number | null)[]) ?? [],
+      extra: Object.fromEntries(EXTRA_VARS.map((v) => [v, (h[`${v}_${m.id}`] as (number | null)[]) ?? []])),
     })),
   };
 }

@@ -1,49 +1,117 @@
-/** Minimal line icons for weather conditions. */
+/** Flat, coloured weather icons (style A): yellow sun, grey clouds, blue rain. */
 export type IconName = 'sun' | 'moon' | 'partly' | 'cloud' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'sleet' | 'thunder' | 'wind';
 
-const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
-const CLOUD_LOW = 'M7 14h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 7.2 3.5 3.5 0 0 0 7 14z';
-const CLOUD = 'M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 11.2 3.5 3.5 0 0 0 7 18z';
+const SUN = '#F7B733';
+const RAY = '#F5A524';
+const CLOUD = '#B4C0CD';
+const CLOUD_DARK = '#9FACBA';
+const CLOUD_LIGHT = '#C3CDD8';
+const RAIN = '#3A86F0';
+const SNOW = '#8FC1F5';
+
+const CLOUD_LOW = 'M17 46h28a10 10 0 0 0 1.5-19.9A15 15 0 0 0 17.6 23.4 11.5 11.5 0 0 0 17 46z';
+const CLOUD_HIGH = 'M17 38h28a10 10 0 0 0 1.5-19.9A15 15 0 0 0 17.6 15.4 11.5 11.5 0 0 0 17 38z';
+
+function Sun({ cx, cy, r }: { cx: number; cy: number; r: number }) {
+  return (
+    <g>
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = (i * Math.PI) / 4;
+        return (
+          <line
+            key={i}
+            x1={cx + Math.cos(a) * (r + 4)}
+            y1={cy + Math.sin(a) * (r + 4)}
+            x2={cx + Math.cos(a) * (r + 9)}
+            y2={cy + Math.sin(a) * (r + 9)}
+            stroke={RAY}
+            strokeWidth={3.2}
+            strokeLinecap="round"
+          />
+        );
+      })}
+      <circle cx={cx} cy={cy} r={r} fill={SUN} />
+    </g>
+  );
+}
+
+function Drops({ n, len }: { n: number; len: number }) {
+  return (
+    <>
+      {[20, 30, 40, 50].slice(0, n).map((x, i) => (
+        <line key={x} x1={x} y1={48 + (i % 2) * 3} x2={x - 3} y2={48 + (i % 2) * 3 + len} stroke={RAIN} strokeWidth={3.2} strokeLinecap="round" />
+      ))}
+    </>
+  );
+}
+
+function Flakes({ at }: { at: [number, number][] }) {
+  return (
+    <>
+      {at.map(([x, y]) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r={3} fill={SNOW} />
+      ))}
+    </>
+  );
+}
 
 export function WeatherIcon({ name, title, className = 'wx' }: { name: IconName; title?: string; className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} role={title ? 'img' : undefined} aria-hidden={title ? undefined : true}>
+    <svg viewBox="0 0 64 64" className={className} role={title ? 'img' : undefined} aria-hidden={title ? undefined : true}>
       {title && <title>{title}</title>}
-      {name === 'sun' && (
-        <>
-          <circle cx="12" cy="12" r="4" {...stroke} />
-          <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" {...stroke} />
-        </>
-      )}
-      {name === 'moon' && <path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z" {...stroke} />}
+      {name === 'sun' && <Sun cx={32} cy={32} r={12} />}
+      {name === 'moon' && <path d="M41 44A16 16 0 0 1 25.5 15a16 16 0 1 0 22 22 16 16 0 0 1-6.5 7z" fill="#F2C94C" />}
       {name === 'partly' && (
         <>
-          <path d="M9 4.5v1.6M4.2 9H5.8M5.6 5.6l1.1 1.1M12.4 5.6l-1.1 1.1M6.4 11.2A3.2 3.2 0 0 1 12 8.6" {...stroke} />
-          <path d="M9 19h8.5a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.5.9A3 3 0 0 0 9 19z" {...stroke} />
+          <Sun cx={24} cy={24} r={9} />
+          <path d="M24 50h22a8 8 0 0 0 1.2-15.9A12 12 0 0 0 24.5 31.5 9 9 0 0 0 24 50z" fill={CLOUD} />
         </>
       )}
-      {name === 'cloud' && <path d={CLOUD} {...stroke} />}
-      {name === 'fog' && <path d="M4 9h16M6 13h12M4 17h16" {...stroke} />}
-      {name === 'wind' && <path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3" {...stroke} />}
-      {(name === 'drizzle' || name === 'rain' || name === 'snow' || name === 'sleet' || name === 'thunder') && (
-        <path d={CLOUD_LOW} {...stroke} />
+      {name === 'cloud' && (
+        <>
+          <path d={CLOUD_LOW} fill={CLOUD_DARK} />
+          <path d="M23 44h22a8 8 0 0 0 1-15.9A11.5 11.5 0 0 0 23.3 25 8.7 8.7 0 0 0 23 44z" fill={CLOUD_LIGHT} />
+        </>
       )}
-      {name === 'drizzle' && <path d="M9 17.5v1M13 18.5v1M17 17.5v1" {...stroke} />}
-      {name === 'rain' && <path d="M9 17l-1 3M13 17l-1 3M17 17l-1 3" {...stroke} />}
-      {name === 'snow' && (
-        <g fill="currentColor">
-          <circle cx="9" cy="18.5" r="1" />
-          <circle cx="13" cy="20" r="1" />
-          <circle cx="16.5" cy="18" r="1" />
-        </g>
+      {name === 'fog' &&
+        [22, 30, 38, 46].map((y, i) => (
+          <line key={y} x1={12 + (i % 2) * 6} y1={y} x2={52 - ((i + 1) % 2) * 6} y2={y} stroke="#A9B5C2" strokeWidth={3.6} strokeLinecap="round" />
+        ))}
+      {name === 'drizzle' && (
+        <>
+          <path d={CLOUD_HIGH} fill={CLOUD} />
+          <Drops n={3} len={4} />
+        </>
+      )}
+      {name === 'rain' && (
+        <>
+          <path d={CLOUD_HIGH} fill={CLOUD_DARK} />
+          <Drops n={4} len={9} />
+        </>
       )}
       {name === 'sleet' && (
         <>
-          <path d="M9 17l-1 3M16 17l-1 3" {...stroke} />
-          <circle cx="12.5" cy="19" r="1" fill="currentColor" />
+          <path d={CLOUD_HIGH} fill={CLOUD} />
+          <line x1={22} y1={46} x2={19} y2={55} stroke={RAIN} strokeWidth={3.2} strokeLinecap="round" />
+          <line x1={42} y1={46} x2={39} y2={55} stroke={RAIN} strokeWidth={3.2} strokeLinecap="round" />
+          <Flakes at={[[31, 51]]} />
         </>
       )}
-      {name === 'thunder' && <path d="M12.5 15l-2 3.5h3l-2 3.5" {...stroke} />}
+      {name === 'snow' && (
+        <>
+          <path d={CLOUD_HIGH} fill={CLOUD} />
+          <Flakes at={[[22, 47], [32, 53], [42, 47], [27, 58], [38, 59]]} />
+        </>
+      )}
+      {name === 'thunder' && (
+        <>
+          <path d={CLOUD_HIGH} fill="#8D9AA8" />
+          <path d="M33 38l-7 12h6l-3 10 10-14h-6l4-8z" fill={SUN} />
+        </>
+      )}
+      {name === 'wind' && (
+        <path d="M8 26h28a6 6 0 1 0-6-6M8 36h38a6 6 0 1 1-6 6M8 31h18" fill="none" stroke={CLOUD_DARK} strokeWidth={3.6} strokeLinecap="round" />
+      )}
     </svg>
   );
 }
