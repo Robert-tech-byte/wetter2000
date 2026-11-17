@@ -3,6 +3,7 @@ import { About } from './components/About';
 import { Commute } from './components/Commute';
 import type { Km } from './lib/geo';
 import { Days } from './components/Days';
+import { Hourly } from './components/Hourly';
 import { Now } from './components/Now';
 import { Radar } from './components/Radar';
 import { LOCATION } from './lib/config';
@@ -37,6 +38,13 @@ export default function App() {
       ) : (
         <Now current={w.current.data} ecmwf={w.ecmwf.data} />
       )}
+
+      <Hourly
+        hires={w.hires.data}
+        ecmwf={w.ecmwf.data}
+        radar={radar.data}
+        currentTemp={w.current.data?.weather.temperature ?? w.ecmwf.data?.current?.temperature_2m ?? null}
+      />
 
       <Radar data={radar.data} error={radar.error} route={route} />
 

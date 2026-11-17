@@ -5,6 +5,8 @@ export interface Member {
   label: string;
   temperature: (number | null)[];
   precipitation: (number | null)[];
+  /** Cloud cover in % (optional, only for the high-resolution models). */
+  cloud?: (number | null)[];
 }
 
 export interface MemberDayStats {

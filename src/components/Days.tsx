@@ -43,6 +43,18 @@ function ecmwfHours(e: EcmwfForecast, date: string): HourPoint[] {
     .filter((p) => p.time.startsWith(date));
 }
 
+/** Rain column: probability (models, first 3 days) and amount. */
+function RainCell({ p, mmValue }: { p: number | null; mmValue: number | null }) {
+  const amount = mmValue != null && mmValue >= 0.1 ? `${fmt1(mmValue)} mm` : null;
+  if (p == null && !amount) return null;
+  return (
+    <span className={`rain-cell ${(p ?? 0) >= 0.5 || (p == null && amount) ? 'wet' : ''}`}>
+      {p != null && <b>{fmt0(p * 100)} %</b>}
+      {amount && <small>{amount}</small>}
+    </span>
+  );
+}
+
 function Certainty({ day }: { day: DayAgreement }) {
   const n = day.members.length;
   const inTol = day.tempAgreement != null ? Math.round(day.tempAgreement * n) : null;
@@ -208,13 +220,14 @@ export function Days({ ecmwf, hires, eps }: Props) {
             lo={x.lo}
             hi={x.hi}
             scale={scale}
-            trailing={
+            rain={
               a ? (
-                <ConfidenceDots level={conf?.level ?? null} models={a.members.length} />
+                <RainCell p={a.rainProbability} mmValue={a.rainSumMedian} />
               ) : (
-                <span className="rain-amount">{(x.rain ?? 0) >= 0.1 ? `${fmt1(x.rain)} mm` : ''}</span>
+                <RainCell p={null} mmValue={x.rain} />
               )
             }
+            trailing={a ? <ConfidenceDots level={conf?.level ?? null} models={a.members.length} /> : null}
           >
             <DayChart points={hours} nowKey={x.date === today ? nowKey : undefined} />
             {a ? (

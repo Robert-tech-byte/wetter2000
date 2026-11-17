@@ -98,7 +98,7 @@ export async function fetchHiresModels(): Promise<MemberSet> {
     `${OPEN_METEO}?${params({
       models: HIRES_MODELS.map((m) => m.id).join(','),
       forecast_days: AGREEMENT_DAYS,
-      hourly: 'temperature_2m,precipitation',
+      hourly: 'temperature_2m,precipitation,cloud_cover',
     })}`,
   );
   const h = data.hourly;
@@ -109,6 +109,7 @@ export async function fetchHiresModels(): Promise<MemberSet> {
       label: m.name,
       temperature: (h[`temperature_2m_${m.id}`] as (number | null)[]) ?? [],
       precipitation: (h[`precipitation_${m.id}`] as (number | null)[]) ?? [],
+      cloud: (h[`cloud_cover_${m.id}`] as (number | null)[]) ?? [],
     })),
   };
 }

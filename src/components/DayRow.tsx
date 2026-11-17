@@ -30,12 +30,13 @@ interface Props {
   lo: number;
   hi: number;
   scale: Scale;
+  rain: ReactNode;
   trailing: ReactNode;
   children: ReactNode;
   open?: boolean;
 }
 
-export function DayRow({ name, date, cond, lo, hi, scale, trailing, children, open }: Props) {
+export function DayRow({ name, date, cond, lo, hi, scale, rain, trailing, children, open }: Props) {
   return (
     <details className="row" open={open}>
       <summary>
@@ -45,6 +46,7 @@ export function DayRow({ name, date, cond, lo, hi, scale, trailing, children, op
         </span>
         <WeatherIcon name={cond.icon} title={cond.text} />
         <TempRange lo={lo} hi={hi} scale={scale} />
+        <span className="row-rain">{rain}</span>
         <span className="row-end">{trailing}</span>
       </summary>
       <div className="row-detail">{children}</div>
