@@ -33,7 +33,7 @@ export default function App() {
           <p className="masthead-name">
             Wetter<b>2000</b>
           </p>
-          <p className="masthead-claim">Wetter für {LOCATION.name}. Ehrlich gerechnet.</p>
+          <p className="masthead-claim">Föhnomenal genau. Wetter für {LOCATION.name}.</p>
         </div>
       </div>
     </header>
@@ -64,7 +64,7 @@ export default function App() {
         </p>
       )}
 
-      <Days ecmwf={w.ecmwf.data} hires={w.hires.data} eps={w.eps.data} pressure={pressure} />
+      <Days ecmwf={w.ecmwf.data} hires={w.hires.data} eps={w.eps.data} pressure={pressure} foehn={w.foehn.data} />
 
       <About
         updatedAt={w.updatedAt}

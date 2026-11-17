@@ -32,6 +32,12 @@ jobs:
         timeout-minutes: 6
         continue-on-error: true
         run: python3 scripts/build-pressure.py || echo "::warning::Luftdruckdaten nicht verfügbar – Karte wird ausgeblendet"
+      - name: Check Föhn variables (log only)
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          curl -sS -m 60 "https://api.open-meteo.com/v1/forecast?latitude=48.137,46.498&longitude=11.575,11.354&hourly=pressure_msl,relative_humidity_2m,wind_direction_700hPa,wind_speed_700hPa&models=ecmwf_ifs025&forecast_days=16&timezone=Europe/Berlin" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); d=d if isinstance(d,list) else [d]; [print(k, sum(v is not None for v in vals)) for loc in d for k,vals in loc.get('hourly',{}).items() if k!='time'] or print(d)"
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

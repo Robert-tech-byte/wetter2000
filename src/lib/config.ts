@@ -44,3 +44,18 @@ export const EPS_MODEL = {
   resolutionKm: 2.2,
   members: 20,
 };
+
+/** Föhn rule of thumb (all must hold in at least FOEHN_MIN_HOURS daytime hours). */
+export const FOEHN = {
+  bozen: { lat: 46.498, lon: 11.354 },
+  /** Pressure Bozen minus München (hPa). */
+  minPressureDiff: 4,
+  /** Relative humidity in München below (%). */
+  maxHumidity: 55,
+  /** Wind direction at ~3000 m (700 hPa) from S to SW (degrees). */
+  dirFrom: 135,
+  dirTo: 250,
+  minHours: 2,
+  /** Local hours considered (inclusive start, exclusive end). */
+  hours: [6, 22] as const,
+};

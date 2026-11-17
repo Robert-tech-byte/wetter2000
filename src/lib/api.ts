@@ -1,4 +1,4 @@
-import { AGREEMENT_DAYS, EPS_MODEL, FORECAST_DAYS, HIRES_MODELS, LOCATION } from './config';
+import { AGREEMENT_DAYS, EPS_MODEL, FOEHN, FORECAST_DAYS, HIRES_MODELS, LOCATION } from './config';
 import { EXTRA_VARS, type Member } from './agreement';
 
 const OPEN_METEO = 'https://api.open-meteo.com/v1/forecast';
@@ -197,4 +197,34 @@ export function fetchMinutely15(lat: number, lon: number): Promise<Minutely15> {
     forecast_minutely_15: '16',
   });
   return getJson(`${OPEN_METEO}?${p}`);
+}
+
+// ---------- Föhn indicators (ECMWF, München + Bozen) ----------
+
+export interface FoehnSeries {
+  time: string[];
+  pressure: (number | null)[];
+  humidity?: (number | null)[];
+  dir700?: (number | null)[];
+  speed700?: (number | null)[];
+}
+
+export async function fetchFoehn(): Promise<{ munich: FoehnSeries; bozen: FoehnSeries }> {
+  const p = new URLSearchParams({
+    latitude: `${LOCATION.lat},${FOEHN.bozen.lat}`,
+    longitude: `${LOCATION.lon},${FOEHN.bozen.lon}`,
+    timezone: LOCATION.timezone,
+    models: 'ecmwf_ifs025',
+    forecast_days: String(FORECAST_DAYS),
+    hourly: 'pressure_msl,relative_humidity_2m,wind_direction_700hPa,wind_speed_700hPa',
+  });
+  const data = await getJson<{ hourly: Record<string, (number | null)[] | string[]> }[]>(`${OPEN_METEO}?${p}`);
+  const series = (h: Record<string, (number | null)[] | string[]>): FoehnSeries => ({
+    time: h.time as string[],
+    pressure: (h.pressure_msl as (number | null)[]) ?? [],
+    humidity: h.relative_humidity_2m as (number | null)[] | undefined,
+    dir700: h.wind_direction_700hPa as (number | null)[] | undefined,
+    speed700: h.wind_speed_700hPa as (number | null)[] | undefined,
+  });
+  return { munich: series(data[0].hourly), bozen: series(data[1].hourly) };
 }

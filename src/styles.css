@@ -1262,3 +1262,38 @@ table.mini small {
   color: var(--link);
   font-weight: 600;
 }
+
+/* --- Föhn --- */
+.foehn {
+  display: inline-block;
+  font: 600 0.62rem/1 var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 99px;
+  color: #6b4a00;
+  background: color-mix(in srgb, var(--signal) 55%, transparent);
+  align-self: center;
+}
+:root[data-theme='dark'] .foehn {
+  color: #ffe2a3;
+  background: color-mix(in srgb, var(--signal) 28%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .foehn {
+    color: #ffe2a3;
+    background: color-mix(in srgb, var(--signal) 28%, transparent);
+  }
+}
+.foehn-note {
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.foehn-note .foehn {
+  margin-top: 1px;
+  flex: none;
+}

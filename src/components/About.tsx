@@ -10,7 +10,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
       <p className="claim">
         <Logo size={22} />
         <span>
-          Wetter<b>2000</b> · Wetter für München. Ehrlich gerechnet.
+          Wetter<b>2000</b> · Föhnomenal genau.
         </span>
       </p>
       <details className="fold">
@@ -36,6 +36,12 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             die Entfernung ergibt sich aus Fahrzeit und 20 km/h (gerade Linie). Für jede Minute der Fahrt wird der
             Regen an der Stelle gelesen, an der man dann ungefähr ist. Bis zum Ende des Nowcasts (ca. +60 min) mit
             dem DWD-Radar in 5-Minuten-Schritten, danach mit ICON-D2 in 15-Minuten-Schritten (Streckenmitte, ungenauer). „Trocken“ heißt unter 0,05 mm auf der ganzen Fahrt. Es wird nichts gespeichert.
+          </p>
+          <h3>Föhn</h3>
+          <p>
+            „Föhn“ erscheint an einem Tag, wenn laut ECMWF-Modell tagsüber mindestens 2 Stunden lang gleichzeitig gilt:
+            Luftdruck in Bozen mindestens 4 hPa höher als in München, Wind in etwa 3000 m Höhe aus Süd bis Südwest und
+            Luftfeuchte in München unter 55 %. Das ist eine Faustregel, keine Messung.
           </p>
           <h3>Regenradar</h3>
           <p>

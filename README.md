@@ -1,6 +1,6 @@
 # Wetter2000
 
-Wetter für München. Ehrlich gerechnet. – React + TypeScript + Vite, gehostet auf GitHub Pages.
+Föhnomenal genau. Wetter für München. – React + TypeScript + Vite, gehostet auf GitHub Pages.
 
 ## Aufbau
 
@@ -12,6 +12,7 @@ Eine Spalte, drei Ebenen: Auf einen Blick steht die Antwort, Antippen zeigt die 
 - **Regen in der nächsten Stunde:** ein Satz und ein Streifen mit 12 Fünf-Minuten-Werten.
 - **Regenradar:** DWD-Radarkomposit in 1-km-Blöcken (5 min) der letzten Stunde plus DWD-Nowcast für 60 Minuten, mit Überblendung. Übersicht ±15 km, Antippen öffnet ±40 km.
 - **Grundkarte:** eigene Vektorkarte ohne Kartenkacheln: Stadtgrenze, Stadtteile, Hauptstraßen, Autobahnen, Isar, Seen, Orte, Entfernungsringe.
+- **Föhn:** Kennzeichen an Tagen, an denen laut ECMWF Föhn wahrscheinlich ist (Druck Bozen − München ≥ 4 hPa, Höhenwind S–SW, Luftfeuchte < 55 %).
 - **Tage:** 15 Tage als Liste mit Regen-Spalte (Wahrscheinlichkeit und Menge der Modelle für 3 Tage, danach ECMWF-Menge). Antippen zeigt den stündlichen Verlauf von Temperatur und Regen; für heute bis übermorgen darunter, wie sicher Temperatur und Regen sind (7 Modelle ≤ 7 km). „Details“ für Power-User: Luftdruckkarte Europa um 12 Uhr (Isobaren, Hochs/Tiefs), Böen, Sonne, Modellspannen, Einzelmodelle, ICON-D2-EPS.
 
 Parameter (Toleranz, Schwellen, Modellliste) stehen in [`src/lib/config.ts`](src/lib/config.ts).
@@ -21,7 +22,7 @@ Parameter (Toleranz, Schwellen, Modellliste) stehen in [`src/lib/config.ts`](src
 - **Logo:** Münchner Skyline (Frauenkirche, Olympiaturm) mit dezenter Zugspitze im Wettersteingebirge, auf Tiefblau. Quelle: `scripts/brand/logo.cjs` (`node scripts/brand/logo.cjs <ordner>` erzeugt `icon.svg`), App-Icons per `node scripts/brand/app-icons.cjs <ordner> public` (benötigt Playwright).
 - **Farben:** Tiefblau `#0F2D4A` (Marke), Isar `#1C7C8C` (Akzent, Links), Föhn `#F2B33D` (Signal); Blau `#2364D2` bleibt Regen vorbehalten.
 - **Schrift:** Inter Tight / Inter, IBM Plex Mono für Messwerte.
-- **Claim:** „Wetter für München. Ehrlich gerechnet.“
+- **Claim:** „Föhnomenal genau.“
 
 ## Icons
 

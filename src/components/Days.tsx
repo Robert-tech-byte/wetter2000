@@ -1,5 +1,8 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import type { PressureData } from '../lib/pressure';
+import type { FoehnSeries } from '../lib/api';
+import { analyzeFoehn, type FoehnDay } from '../lib/foehn';
+import { compass } from '../lib/hourly';
 
 const PressureMap = lazy(() => import('./PressureMap').then((m) => ({ default: m.PressureMap })));
 import { analyzeDays, dayConfidence, median, rainConsensus, type DayAgreement, type ConfidenceLevel } from '../lib/agreement';
@@ -17,6 +20,7 @@ interface Props {
   hires: MemberSet | null;
   eps: MemberSet | null;
   pressure: PressureData | null;
+  foehn: { munich: FoehnSeries; bozen: FoehnSeries } | null;
 }
 
 const level = (v: number | null): ConfidenceLevel | null => (v == null ? null : v >= 0.8 ? 3 : v >= 0.5 ? 2 : 1);
@@ -45,6 +49,20 @@ function ecmwfHours(e: EcmwfForecast, date: string): HourPoint[] {
   return e.hourly.time
     .map((t, i) => ({ time: t, temp: e.hourly.temperature_2m[i], rain: e.hourly.precipitation[i] }))
     .filter((p) => p.time.startsWith(date));
+}
+
+function FoehnNote({ day }: { day: FoehnDay }) {
+  return (
+    <p className="foehn-note">
+      <span className="foehn">Föhn</span>
+      <span>
+        Wahrscheinlich laut Modell: Druck Bozen–München bis {fmt0(day.maxDiff)} hPa
+        {day.withUpperWind && day.dir700 != null ? `, Höhenwind aus ${compass(day.dir700)}` : ''}
+        {day.minHumidity != null ? `, Luftfeuchte bis ${fmt0(day.minHumidity)} %` : ''}. Gute Fernsicht auf die Alpen, mild und
+        trocken.
+      </span>
+    </p>
+  );
 }
 
 /** Rain column: probability (models, first 3 days) and amount. */
@@ -190,7 +208,7 @@ function PowerDetails({
   );
 }
 
-export function Days({ ecmwf, hires, eps, pressure }: Props) {
+export function Days({ ecmwf, hires, eps, pressure, foehn }: Props) {
   const nowKey = localHourKey();
   const today = nowKey.slice(0, 10);
 
@@ -198,6 +216,7 @@ export function Days({ ecmwf, hires, eps, pressure }: Props) {
     () => (hires ? analyzeDays(hires.time, hires.members, nowKey, AGREEMENT_DAYS) : []),
     [hires, nowKey],
   );
+  const foehnDays = useMemo(() => (foehn ? analyzeFoehn(foehn.munich, foehn.bozen) : []), [foehn]);
   const epsDays = useMemo(() => (eps ? analyzeDays(eps.time, eps.members, nowKey, AGREEMENT_DAYS) : []), [eps, nowKey]);
 
   if (!ecmwf) return null;
@@ -225,11 +244,13 @@ export function Days({ ecmwf, hires, eps, pressure }: Props) {
         const a = k < AGREEMENT_DAYS ? (agreement.find((g) => g.date === x.date) ?? null) : null;
         const conf = a ? dayConfidence(a) : null;
         const hours = a && hires ? modelHours(hires, x.date) : ecmwfHours(ecmwf, x.date);
+        const f = foehnDays.find((d) => d.date === x.date && d.active) ?? null;
         return (
           <DayRow
             key={x.date}
             name={relativeDayName(x.date, today)}
             date={k < AGREEMENT_DAYS ? '' : formatDayShort(x.date).split(' ')[1]}
+            badge={f ? <span className="foehn" title="Föhn wahrscheinlich">Föhn</span> : null}
             cond={x.cond}
             lo={x.lo}
             hi={x.hi}
@@ -249,6 +270,7 @@ export function Days({ ecmwf, hires, eps, pressure }: Props) {
             ) : (
               <p className="note">ECMWF IFS. Wie sicher die Vorhersage ist, wird nur für die ersten 3 Tage berechnet.</p>
             )}
+            {f && <FoehnNote day={f} />}
             <PowerDetails day={a} eps={epsDays.find((e) => e.date === x.date) ?? null} basics={x} pressure={pressure} date={x.date} />
           </DayRow>
         );
