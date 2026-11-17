@@ -2,11 +2,17 @@ import { EPS_MODEL, HIRES_MODELS, MIN_COVERAGE, RAIN_THRESHOLD, TEMP_TOLERANCE }
 import { fmt1 } from '../lib/format';
 import { clock } from '../lib/time';
 import { Legend } from './Radar';
+import { Logo } from './Logo';
 
 export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null; loading: boolean; onReload: () => void }) {
   return (
     <footer className="about">
-      <p className="claim">Wetter für München. Ehrlich gerechnet.</p>
+      <p className="claim">
+        <Logo size={22} />
+        <span>
+          Wetter<b>2000</b> · Wetter für München. Ehrlich gerechnet.
+        </span>
+      </p>
       <details className="fold">
         <summary>Quellen &amp; Methode</summary>
         <div className="prose">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { About } from './components/About';
-import { Logo } from './components/Logo';
+import { Logo, Skyline } from './components/Logo';
 import { Commute } from './components/Commute';
 import type { Km } from './lib/geo';
 import { Days } from './components/Days';
@@ -24,16 +24,20 @@ export default function App() {
   ].filter(Boolean);
 
   return (
-    <div className="app">
-      <header className="top">
-        <span className="brand">
-          <Logo size={30} />
-          <span>
+    <>
+    <header className="masthead">
+      <Skyline />
+      <div className="masthead-in">
+        <Logo size={52} />
+        <div>
+          <p className="masthead-name">
             Wetter<b>2000</b>
-          </span>
-        </span>
-        <span className="place">{LOCATION.name}</span>
-      </header>
+          </p>
+          <p className="masthead-claim">Wetter für {LOCATION.name}. Ehrlich gerechnet.</p>
+        </div>
+      </div>
+    </header>
+    <div className="app">
 
       <Commute radar={radar.data} onRoute={setRoute} />
 
@@ -71,5 +75,6 @@ export default function App() {
         }}
       />
     </div>
+    </>
   );
 }

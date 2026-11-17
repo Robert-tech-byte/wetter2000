@@ -11,6 +11,8 @@
   --cta-bg: #0f2d4a;
   --cta-fg: #f3f6f8;
   --signal: #f2b33d;
+  --brand-text: #0f2d4a;
+  --masthead: #0f2d4a;
   --good: #23864a;
   --mid: #b7791f;
   --low: #c2412d;
@@ -36,6 +38,10 @@
     --line: #223244;
     --accent: #6ea8ff;
     --link: #4fb3c3;
+  --brand-text: #7fd0dc;
+  --masthead: #10263d;
+    --brand-text: #7fd0dc;
+    --masthead: #10263d;
     --cta-bg: #1c7c8c;
     --cta-fg: #ffffff;
     --good: #4cc27a;
@@ -105,8 +111,7 @@ button {
 .app {
   max-width: 440px;
   margin: 0 auto;
-  padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 48px
-    max(16px, env(safe-area-inset-left));
+  padding: 22px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left));
   display: grid;
   /* minmax(0, 1fr): wide children (hour strip, tables) scroll inside instead of widening the column */
   grid-template-columns: minmax(0, 1fr);
@@ -176,9 +181,9 @@ button {
   font-variant-numeric: tabular-nums;
 }
 .now-icon {
-  width: 56px;
-  height: 56px;
-  margin-top: 8px;
+  width: 76px;
+  height: 76px;
+  margin-top: 4px;
 }
 .now-cond,
 .now-hl {
@@ -405,7 +410,7 @@ button {
   font: 600 0.72rem var(--font-body);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--brand-text);
 }
 .row {
   border-bottom: 1px solid var(--line);
@@ -434,8 +439,8 @@ button {
   font-size: 0.75rem;
 }
 .wx {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 .range {
   display: grid;
@@ -578,7 +583,7 @@ td small.wet {
 }
 @media (min-width: 720px) {
   .app {
-    padding-top: 48px;
+    padding-top: 32px;
   }
 }
 
@@ -975,7 +980,7 @@ table.mini small {
   display: none;
 }
 .hours li {
-  flex: 0 0 58px;
+  flex: 0 0 62px;
   scroll-snap-align: start;
 }
 .hours li > button {
@@ -995,7 +1000,8 @@ table.mini small {
   background: var(--surface);
 }
 .hours li > button[aria-pressed='true'] {
-  border-color: var(--fg);
+  border-color: var(--link);
+  box-shadow: inset 0 0 0 1px var(--link);
   background: var(--surface);
 }
 .h-time {
@@ -1008,8 +1014,8 @@ table.mini small {
   font-weight: 600;
 }
 .hours .wx {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
 }
 .h-temp {
   font-weight: 600;
@@ -1030,7 +1036,7 @@ table.mini small {
 
 /* --- Tageszeile mit Regen-Spalte --- */
 .row > summary {
-  grid-template-columns: minmax(5.4rem, auto) 22px minmax(0, 1fr) 3.4rem 1.9rem;
+  grid-template-columns: minmax(5.4rem, auto) 28px minmax(0, 1fr) 3.4rem 1.9rem;
   gap: 8px;
 }
 .range {
@@ -1184,7 +1190,75 @@ table.mini small {
 }
 .claim {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--fg);
+}
+.claim b {
+  color: var(--link);
+}
+
+/* --- Masthead: Marke über allem --- */
+.masthead {
+  position: relative;
+  overflow: hidden;
+  background: var(--masthead);
+  color: #f3f6f8;
+  padding: max(22px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 22px
+    max(16px, env(safe-area-inset-left));
+}
+.masthead-in {
+  position: relative;
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.masthead .logo {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+.masthead p {
+  margin: 0;
+}
+.masthead-name {
+  font: 500 1.9rem/1 var(--font-display);
+  letter-spacing: -0.025em;
+}
+.masthead-name b {
+  font-weight: 700;
+  color: #7fd0dc;
+}
+.masthead-claim {
+  margin-top: 6px !important;
+  font-size: 0.82rem;
+  color: #a9bccd;
+}
+/* Very faint skyline at the lower right edge, purely decorative */
+.masthead-skyline {
+  position: absolute;
+  right: max(-10px, calc(50% - 300px));
+  bottom: -14px;
+  height: 128px;
+  width: 128px;
+  opacity: 0.13;
+  pointer-events: none;
+}
+@media (max-width: 520px) {
+  /* On phones keep the ornament clear of the claim text. */
+  .masthead-skyline {
+    right: -22px;
+    bottom: 8px;
+    height: 80px;
+    width: 80px;
+    opacity: 0.08;
+  }
+}
+.row[open] > summary .row-name {
+  color: var(--link);
+  font-weight: 600;
 }

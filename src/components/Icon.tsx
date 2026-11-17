@@ -60,7 +60,9 @@ export function WeatherIcon({ name, title, className = 'wx' }: { name: IconName;
     <svg viewBox="0 0 64 64" className={className} role={title ? 'img' : undefined} aria-hidden={title ? undefined : true}>
       {title && <title>{title}</title>}
       {name === 'sun' && <Sun cx={32} cy={32} r={12} />}
-      {name === 'moon' && <path d="M41 44A16 16 0 0 1 25.5 15a16 16 0 1 0 22 22 16 16 0 0 1-6.5 7z" fill="#F2C94C" />}
+      {name === 'moon' && (
+        <path d="M30 14a18 18 0 1 0 20.5 24.4A15 15 0 0 1 30 14z" fill="#F2C94C" />
+      )}
       {name === 'partly' && (
         <>
           <Sun cx={24} cy={24} r={9} />

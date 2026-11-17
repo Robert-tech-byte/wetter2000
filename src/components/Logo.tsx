@@ -17,3 +17,12 @@ export function Logo({ size = 28, title }: { size?: number; title?: string }) {
     </svg>
   );
 }
+
+/** Decorative skyline band for the masthead (very faint, purely ornamental). */
+export function Skyline() {
+  return (
+    <svg className="masthead-skyline" viewBox="0 0 64 64" preserveAspectRatio="xMaxYMax meet" aria-hidden="true">
+      <g dangerouslySetInnerHTML={{ __html: SKYLINE }} />
+    </svg>
+  );
+}
