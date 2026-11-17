@@ -1,258 +1,184 @@
-import L from 'leaflet';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchRadar } from '../lib/api';
-import { LOCATION } from '../lib/config';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fmt1 } from '../lib/format';
-import { gridToLatLon, intensityText, parseRadar, pointRate, RAIN_SCALE, rateColor, type RadarData } from '../lib/radar';
+import { nowcastSentence } from '../lib/nowcast';
+import { pointRateAt, rainCss, RAIN_STOPS, type RadarData } from '../lib/radar';
 import { clock } from '../lib/time';
-import { ErrorNote } from './Section';
+import { RadarCanvas } from './RadarCanvas';
 
-/** Canvas layer that draws the RADOLAN grid as projected quads. */
-class RadarLayer extends L.Layer {
-  private canvas = L.DomUtil.create('canvas', 'radar-canvas leaflet-zoom-hide');
-  private corners: L.LatLng[][] = [];
-  private rate: number[][] = [];
+const RAIN = 0.1;
+/** Playback speed in frames (5 min) per second. */
+const SPEED = 2.5;
 
-  setGrid(data: RadarData) {
-    const { rows, cols, corners } = data;
-    this.corners = [];
-    for (let r = 0; r <= rows; r++) {
-      const line: L.LatLng[] = [];
-      for (let c = 0; c <= cols; c++) {
-        const [lat, lon] = gridToLatLon(corners, c / cols, r / rows);
-        line.push(L.latLng(lat, lon));
-      }
-      this.corners.push(line);
-    }
-  }
-
-  setFrame(rate: number[][]) {
-    this.rate = rate;
-    this.redraw();
-  }
-
-  onAdd(map: L.Map) {
-    map.getPanes().overlayPane.appendChild(this.canvas);
-    map.on('moveend zoomend resize', this.redraw, this);
-    this.redraw();
-    return this;
-  }
-
-  onRemove(map: L.Map) {
-    this.canvas.remove();
-    map.off('moveend zoomend resize', this.redraw, this);
-    return this;
-  }
-
-  redraw() {
-    const map = (this as unknown as { _map?: L.Map })._map;
-    if (!map || !this.corners.length) return;
-    const size = map.getSize();
-    const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = size.x * dpr;
-    this.canvas.height = size.y * dpr;
-    this.canvas.style.width = `${size.x}px`;
-    this.canvas.style.height = `${size.y}px`;
-    L.DomUtil.setPosition(this.canvas, map.containerPointToLayerPoint([0, 0]));
-    const ctx = this.canvas.getContext('2d')!;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, size.x, size.y);
-
-    const pts = this.corners.map((line) => line.map((ll) => map.latLngToContainerPoint(ll)));
-    for (let r = 0; r < this.rate.length; r++) {
-      const row = this.rate[r];
-      for (let c = 0; c < row.length; c++) {
-        const color = rateColor(row[c]);
-        if (!color) continue;
-        const a = pts[r][c];
-        const b = pts[r][c + 1];
-        const d = pts[r + 1][c + 1];
-        const e = pts[r + 1][c];
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.lineTo(d.x, d.y);
-        ctx.lineTo(e.x, e.y);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-  }
+function useReducedMotion() {
+  const [reduce, setReduce] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const on = () => setReduce(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return reduce;
 }
 
-const REFRESH_MS = 5 * 60 * 1000;
-
-export function Radar() {
-  const mapEl = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const layerRef = useRef<RadarLayer | null>(null);
-  const [data, setData] = useState<RadarData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [index, setIndex] = useState(0);
+export function Radar({ data, error }: { data: RadarData | null; error: string | null }) {
+  const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [large, setLarge] = useState(false);
+  const reduce = useReducedMotion();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const userMoved = useRef(false);
 
-  const load = useCallback(async () => {
-    try {
-      const parsed = parseRadar(await fetchRadar());
-      setData(parsed);
-      setError(null);
-      // Start at the latest observation.
-      const latest = parsed.frames.findIndex((f) => f.timestamp === parsed.latestObservation);
-      setIndex(latest >= 0 ? latest : 0);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
-
+  // Start at the latest observation whenever new data arrives (unless the user is scrubbing).
   useEffect(() => {
-    load();
-    const id = setInterval(load, REFRESH_MS);
-    return () => clearInterval(id);
-  }, [load]);
-
-  // Map setup
-  useEffect(() => {
-    if (!mapEl.current || mapRef.current) return;
-    const map = L.map(mapEl.current, { center: [LOCATION.lat, LOCATION.lon], zoom: 9, scrollWheelZoom: false });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 13,
-      minZoom: 7,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-    L.circleMarker([LOCATION.lat, LOCATION.lon], {
-      radius: 6,
-      color: '#fff',
-      weight: 2,
-      fillColor: '#e0245e',
-      fillOpacity: 1,
-    })
-      .bindTooltip('München (Marienplatz)')
-      .addTo(map);
-    const layer = new RadarLayer();
-    layer.addTo(map);
-    mapRef.current = map;
-    layerRef.current = layer;
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      layerRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (data && layerRef.current) layerRef.current.setGrid(data);
+    if (data && !userMoved.current) setT(data.latestIndex);
   }, [data]);
 
-  useEffect(() => {
-    const frame = data?.frames[index];
-    if (frame && layerRef.current) layerRef.current.setFrame(frame.rate);
-  }, [data, index]);
-
-  // Animation
+  // Smooth playback with cross-fading between frames.
   useEffect(() => {
     if (!playing || !data) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % data.frames.length), 600);
-    return () => clearInterval(id);
-  }, [playing, data]);
+    let raf = 0;
+    let last = performance.now();
+    const max = data.frames.length - 1;
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      setT((v) => (v + dt * (reduce ? 1 : SPEED) > max ? 0 : v + dt * (reduce ? 1 : SPEED)));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, data, reduce]);
 
-  const nowcast = useMemo(() => {
+  useEffect(() => {
+    const d = dialog.current;
+    if (!d) return;
+    if (large && !d.open) d.showModal();
+    if (!large && d.open) d.close();
+  }, [large]);
+
+  const strip = useMemo(() => {
     if (!data) return [];
-    return data.frames
-      .filter((f) => f.timestamp >= data.latestObservation)
-      .map((f) => ({ ...f, point: pointRate(f, data.position) }));
+    return Array.from({ length: 13 }, (_, i) => data.latestIndex + i)
+      .filter((k) => k < data.frames.length)
+      .map((k) => pointRateAt(data, k));
   }, [data]);
+  const stripMax = Math.max(1, ...strip);
 
-  const summary = useMemo(() => {
-    if (!nowcast.length) return null;
-    const now = nowcast[0].point;
-    const firstRain = nowcast.find((f) => f.point >= 0.1);
-    const lastRain = [...nowcast].reverse().find((f) => f.point >= 0.1);
-    const peak = Math.max(...nowcast.map((f) => f.point));
-    if (!firstRain) return 'In den nächsten 60 Minuten kein Regen in München erwartet.';
-    if (now >= 0.1) {
-      const stops = nowcast.find((f) => f.point < 0.1 && f.timestamp > firstRain.timestamp);
-      return stops
-        ? `Es regnet (${intensityText(now)}). Voraussichtlich trocken ab ca. ${clock(stops.timestamp)} Uhr.`
-        : `Es regnet (${intensityText(now)}) und hört in der nächsten Stunde voraussichtlich nicht auf.`;
-    }
-    return `Regen ab ca. ${clock(firstRain.timestamp)} Uhr (${intensityText(peak)}, bis ${fmt1(peak)} mm/h)${
-      lastRain && lastRain !== firstRain ? `, bis etwa ${clock(lastRain.timestamp)} Uhr` : ''
-    }.`;
-  }, [nowcast]);
+  const frameInfo = useMemo(() => {
+    if (!data?.frames.length) return null;
+    const k = Math.round(t);
+    const f = data.frames[Math.max(0, Math.min(data.frames.length - 1, k))];
+    const offset = Math.round((t - data.latestIndex) * 5);
+    const ts = new Date(new Date(data.latestObservation).getTime() + offset * 60000);
+    return {
+      time: clock(ts),
+      tag: offset === 0 ? 'jetzt' : offset > 0 ? `+${offset} min` : `${offset} min`,
+      forecast: f.isForecast || offset > 0,
+    };
+  }, [data, t]);
 
-  const frame = data?.frames[index];
-  const peak = Math.max(0.5, ...nowcast.map((f) => f.point));
+  if (error && !data) return <p className="error">Das Regenradar ist gerade nicht erreichbar ({error}).</p>;
+
+  const controls = data && frameInfo && (
+    <div className="radar-controls">
+      <button
+        type="button"
+        className="round"
+        onClick={() => setPlaying((p) => !p)}
+        aria-label={playing ? 'Animation anhalten' : 'Animation abspielen'}
+      >
+        {playing ? (
+          <svg viewBox="0 0 14 14" aria-hidden="true">
+            <rect x="2.5" y="1.5" width="3" height="11" rx="1" fill="currentColor" />
+            <rect x="8.5" y="1.5" width="3" height="11" rx="1" fill="currentColor" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 14 14" aria-hidden="true">
+            <path d="M3 1.5v11l9-5.5z" fill="currentColor" />
+          </svg>
+        )}
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={data.frames.length - 1}
+        step={0.05}
+        value={t}
+        onChange={(e) => {
+          userMoved.current = true;
+          setPlaying(false);
+          setT(Number(e.target.value));
+        }}
+        aria-label="Zeitpunkt des Radarbilds"
+        aria-valuetext={`${frameInfo.time} Uhr, ${frameInfo.tag}`}
+      />
+      <output className={frameInfo.forecast ? 'forecast' : ''}>
+        {frameInfo.time} <span>{frameInfo.tag}</span>
+      </output>
+    </div>
+  );
 
   return (
     <div className="radar">
-      <ErrorNote what="Das Regenradar" error={error} />
-      {summary && <p className="radar-summary card">☔ {summary}</p>}
-
-      <div className="card radar-card">
-        <div ref={mapEl} className="radar-map" role="region" aria-label="Regenradar-Karte" />
-        {frame && (
-          <div className="radar-controls">
-            <button
-              className="play"
-              onClick={() => setPlaying((p) => !p)}
-              aria-label={playing ? 'Animation anhalten' : 'Animation abspielen'}
-            >
-              {playing ? '⏸' : '▶'}
-            </button>
-            <input
-              type="range"
-              min={0}
-              max={(data?.frames.length ?? 1) - 1}
-              value={index}
-              onChange={(e) => {
-                setPlaying(false);
-                setIndex(Number(e.target.value));
-              }}
-              aria-label="Zeitpunkt"
-            />
-            <span className={`frame-label ${frame.isForecast ? 'forecast' : ''}`}>
-              {clock(frame.timestamp)} Uhr
-              <small>{frame.isForecast ? `Vorhersage +${frame.leadMinutes} min` : 'gemessen'}</small>
-            </span>
-          </div>
-        )}
-        <div className="legend" aria-label="Legende Niederschlag in mm/h">
-          {RAIN_SCALE.map((s) => (
-            <span key={s.min}>
-              <i style={{ background: s.color }} />
-              {s.label}
-            </span>
-          ))}
-          <span className="muted">mm/h</span>
-        </div>
-      </div>
-
-      {nowcast.length > 0 && (
-        <div className="card nowcast">
-          <h3 className="chart-title">München, nächste 60 Minuten</h3>
-          <div className="nowcast-bars" role="img" aria-label="Regenintensität in den nächsten 60 Minuten">
-            {nowcast.map((f) => (
-              <div key={f.timestamp} className="nowcast-col" title={`${clock(f.timestamp)}: ${fmt1(f.point)} mm/h`}>
-                <div
-                  className="nowcast-bar"
-                  style={{
-                    height: `${Math.min(100, (f.point / peak) * 100)}%`,
-                    background: rateColor(f.point) ?? 'transparent',
-                  }}
-                />
-                <span>{f.leadMinutes % 15 === 0 ? `+${f.leadMinutes}` : ''}</span>
-              </div>
+      {data && (
+        <div className="rainline">
+          <p className="rain-sentence">{nowcastSentence(data)}</p>
+          <div className="strip" aria-hidden="true">
+            {strip.map((v, i) => (
+              <i
+                key={i}
+                style={{
+                  height: `${Math.max(6, (v / stripMax) * 100)}%`,
+                  background: v >= RAIN ? rainCss(v, 0.75) : undefined,
+                }}
+                title={`${fmt1(v)} mm/h`}
+              />
             ))}
           </div>
+          <div className="strip-axis" aria-hidden="true">
+            <span>jetzt</span>
+            <span>+30</span>
+            <span>+60 min</span>
+          </div>
         </div>
       )}
-      {data && (
-        <p className="muted small">
-          DWD-Radarkomposit RV (1 km, 5 min) über Bright Sky. Letzte Messung {clock(data.latestObservation)} Uhr, danach
-          DWD-Nowcast. Aktualisiert alle 5 Minuten.
-        </p>
-      )}
+
+      <button type="button" className="radar-frame" onClick={() => setLarge(true)} aria-label="Radar groß anzeigen">
+        <RadarCanvas data={data} t={t} extent={40} label="Regenradar München und Umland" />
+        {!data && <span className="radar-loading">Radar wird geladen …</span>}
+      </button>
+      {controls}
+
+      <dialog ref={dialog} className="radar-dialog" onClose={() => setLarge(false)} aria-label="Regenradar groß">
+        <div className="dialog-head">
+          <strong>Regenradar</strong>
+          <button type="button" className="round" onClick={() => setLarge(false)} aria-label="Schließen">
+            <svg viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        {large && (
+          <div className="radar-frame big">
+            <RadarCanvas data={data} t={t} extent={60} label="Regenradar München und Umland, groß" />
+          </div>
+        )}
+        {controls}
+        <Legend />
+      </dialog>
+    </div>
+  );
+}
+
+export function Legend() {
+  const gradient = `linear-gradient(90deg, ${RAIN_STOPS.slice(1)
+    .map(([v]) => rainCss(v, 0.55))
+    .join(', ')})`;
+  return (
+    <div className="legend" aria-label="Farbskala Niederschlag 0,1 bis 50 Millimeter pro Stunde">
+      <span>0,1</span>
+      <i style={{ background: gradient }} />
+      <span>50 mm/h</span>
     </div>
   );
 }

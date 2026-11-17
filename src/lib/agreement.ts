@@ -173,3 +173,22 @@ export function confidenceLabel(share: number | null): Confidence | null {
 export function rainConsensus(p: number | null): number | null {
   return p == null ? null : Math.max(p, 1 - p);
 }
+
+export type ConfidenceLevel = 1 | 2 | 3;
+
+/**
+ * One overall confidence per day: the weaker of temperature agreement and rain consensus,
+ * so a day is never "sicher" while the models disagree on rain.
+ */
+export function dayConfidence(day: DayAgreement): { level: ConfidenceLevel; score: number } | null {
+  const parts = [day.tempAgreement, rainConsensus(day.rainProbability)].filter((v): v is number => v != null);
+  if (!parts.length) return null;
+  const score = Math.min(...parts);
+  return { level: score >= 0.8 ? 3 : score >= 0.5 ? 2 : 1, score };
+}
+
+export const CONFIDENCE_WORD: Record<ConfidenceLevel, string> = {
+  3: 'sicher',
+  2: 'ziemlich sicher',
+  1: 'unsicher',
+};

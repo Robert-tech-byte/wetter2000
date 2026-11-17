@@ -1,59 +1,64 @@
+import type { IconName } from '../components/Icon';
+
 /** WMO weather interpretation codes (as used by Open-Meteo). */
-const CODES: Record<number, [string, string]> = {
-  0: ['Klar', '☀️'],
-  1: ['Überwiegend klar', '🌤️'],
-  2: ['Teilweise bewölkt', '⛅'],
-  3: ['Bedeckt', '☁️'],
-  45: ['Nebel', '🌫️'],
-  48: ['Reifnebel', '🌫️'],
-  51: ['Leichter Nieselregen', '🌦️'],
-  53: ['Nieselregen', '🌦️'],
-  55: ['Starker Nieselregen', '🌧️'],
-  56: ['Gefrierender Niesel', '🌧️'],
-  57: ['Gefrierender Niesel', '🌧️'],
-  61: ['Leichter Regen', '🌦️'],
-  63: ['Regen', '🌧️'],
-  65: ['Starker Regen', '🌧️'],
-  66: ['Gefrierender Regen', '🌧️'],
-  67: ['Gefrierender Regen', '🌧️'],
-  71: ['Leichter Schneefall', '🌨️'],
-  73: ['Schneefall', '🌨️'],
-  75: ['Starker Schneefall', '❄️'],
-  77: ['Schneegriesel', '🌨️'],
-  80: ['Leichte Regenschauer', '🌦️'],
-  81: ['Regenschauer', '🌧️'],
-  82: ['Heftige Regenschauer', '⛈️'],
-  85: ['Schneeschauer', '🌨️'],
-  86: ['Starke Schneeschauer', '❄️'],
-  95: ['Gewitter', '⛈️'],
-  96: ['Gewitter mit Hagel', '⛈️'],
-  99: ['Gewitter mit Hagel', '⛈️'],
+const CODES: Record<number, [string, IconName]> = {
+  0: ['Klar', 'sun'],
+  1: ['Überwiegend klar', 'partly'],
+  2: ['Teilweise bewölkt', 'partly'],
+  3: ['Bedeckt', 'cloud'],
+  45: ['Nebel', 'fog'],
+  48: ['Reifnebel', 'fog'],
+  51: ['Leichter Nieselregen', 'drizzle'],
+  53: ['Nieselregen', 'drizzle'],
+  55: ['Starker Nieselregen', 'drizzle'],
+  56: ['Gefrierender Niesel', 'sleet'],
+  57: ['Gefrierender Niesel', 'sleet'],
+  61: ['Leichter Regen', 'rain'],
+  63: ['Regen', 'rain'],
+  65: ['Starker Regen', 'rain'],
+  66: ['Gefrierender Regen', 'sleet'],
+  67: ['Gefrierender Regen', 'sleet'],
+  71: ['Leichter Schneefall', 'snow'],
+  73: ['Schneefall', 'snow'],
+  75: ['Starker Schneefall', 'snow'],
+  77: ['Schneegriesel', 'snow'],
+  80: ['Leichte Schauer', 'rain'],
+  81: ['Regenschauer', 'rain'],
+  82: ['Heftige Schauer', 'rain'],
+  85: ['Schneeschauer', 'snow'],
+  86: ['Starke Schneeschauer', 'snow'],
+  95: ['Gewitter', 'thunder'],
+  96: ['Gewitter mit Hagel', 'thunder'],
+  99: ['Gewitter mit Hagel', 'thunder'],
 };
 
-export function describeWeather(code: number | null | undefined): { text: string; icon: string } {
-  if (code == null || !(code in CODES)) return { text: '–', icon: '❔' };
+export interface Condition {
+  text: string;
+  icon: IconName;
+}
+
+export function describeWeather(code: number | null | undefined): Condition {
+  if (code == null || !(code in CODES)) return { text: '–', icon: 'cloud' };
   const [text, icon] = CODES[code];
   return { text, icon };
 }
 
-/** Bright Sky icon names → emoji / text. */
-const BRIGHTSKY_ICONS: Record<string, [string, string]> = {
-  'clear-day': ['Klar', '☀️'],
-  'clear-night': ['Klar', '🌙'],
-  'partly-cloudy-day': ['Teilweise bewölkt', '⛅'],
-  'partly-cloudy-night': ['Teilweise bewölkt', '☁️'],
-  cloudy: ['Bedeckt', '☁️'],
-  fog: ['Nebel', '🌫️'],
-  wind: ['Windig', '💨'],
-  rain: ['Regen', '🌧️'],
-  sleet: ['Schneeregen', '🌨️'],
-  snow: ['Schnee', '❄️'],
-  hail: ['Hagel', '🌨️'],
-  thunderstorm: ['Gewitter', '⛈️'],
+/** Bright Sky icon names. */
+const BRIGHTSKY: Record<string, Condition> = {
+  'clear-day': { text: 'Klar', icon: 'sun' },
+  'clear-night': { text: 'Klar', icon: 'moon' },
+  'partly-cloudy-day': { text: 'Teilweise bewölkt', icon: 'partly' },
+  'partly-cloudy-night': { text: 'Teilweise bewölkt', icon: 'cloud' },
+  cloudy: { text: 'Bedeckt', icon: 'cloud' },
+  fog: { text: 'Nebel', icon: 'fog' },
+  wind: { text: 'Windig', icon: 'wind' },
+  rain: { text: 'Regen', icon: 'rain' },
+  sleet: { text: 'Schneeregen', icon: 'sleet' },
+  snow: { text: 'Schnee', icon: 'snow' },
+  hail: { text: 'Hagel', icon: 'sleet' },
+  thunderstorm: { text: 'Gewitter', icon: 'thunder' },
 };
 
-export function describeBrightSkyIcon(icon: string | null | undefined): { text: string; icon: string } {
-  if (!icon || !(icon in BRIGHTSKY_ICONS)) return { text: '–', icon: '❔' };
-  const [text, emoji] = BRIGHTSKY_ICONS[icon];
-  return { text, icon: emoji };
+export function describeBrightSkyIcon(icon: string | null | undefined): Condition | null {
+  return icon && icon in BRIGHTSKY ? BRIGHTSKY[icon] : null;
 }
