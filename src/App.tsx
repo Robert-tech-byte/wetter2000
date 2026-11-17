@@ -7,7 +7,6 @@ import { Days } from './components/Days';
 import { Hourly } from './components/Hourly';
 import { Now } from './components/Now';
 import { Radar } from './components/Radar';
-import { LOCATION } from './lib/config';
 import { usePressure } from './lib/usePressure';
 import { useRadar } from './lib/useRadar';
 import { useWeather } from './lib/useWeather';
