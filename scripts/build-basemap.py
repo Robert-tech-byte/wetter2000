@@ -4,7 +4,7 @@ Builds src/data/basemap.json: simplified OpenStreetMap geodata for the radar bas
 
 Contents: Munich city boundary, Isar, Starnberger See, Ammersee, motorways, main roads
 (trunk/primary, within ±25 km), district and town labels and the U-Bahn station
-Schwanthalerhöhe (reference point for the commute check). Data © OpenStreetMap contributors (ODbL).
+Schwanthalerhöhe and Westfriedhof (workplaces for the commute check). Data © OpenStreetMap contributors (ODbL).
 
 Run manually (needs internet):  python3 scripts/build-basemap.py
 or via the "Update basemap" GitHub workflow.
@@ -67,7 +67,7 @@ QUERY_BASE = f"""
 out geom;
 node["place"~"^(suburb|quarter|neighbourhood)$"]["name"~"^({'|'.join(SUBURBS)})$"]({BBOX_ROADS});
 out;
-node["railway"="station"]["station"="subway"]["name"="Schwanthalerhöhe"];
+node["railway"="station"]["station"="subway"]["name"~"^(Schwanthalerhöhe|Westfriedhof)$"];
 out;
 nwr["aeroway"="aerodrome"]["iata"="MUC"];
 out center;
@@ -215,7 +215,7 @@ def main():
     print("Fetching base layers …", file=sys.stderr)
     base = overpass(QUERY_BASE)
     city, isar, lakes, places, suburbs = [], [], [], [], []
-    anchor = None
+    anchors = {}
     seen_lakes = set()
     for el in base["elements"]:
         tags = el.get("tags", {})
@@ -234,7 +234,7 @@ def main():
                 seen_lakes.add(name)
                 lakes += [rnd(simplify(r, 0.05)) for r in rings if len(r) > 3]
         elif el["type"] == "node" and tags.get("station") == "subway":
-            anchor = {"name": "U Schwanthalerhöhe", "lat": round(el["lat"], 5), "lon": round(el["lon"], 5)}
+            anchors.setdefault(name, {"name": name, "lat": round(el["lat"], 5), "lon": round(el["lon"], 5)})
         elif el["type"] == "node" and name in SUBURBS and tags.get("place") != "town":
             if name not in {p["name"] for p in suburbs}:
                 suburbs.append({"name": name, "lat": round(el["lat"], 4), "lon": round(el["lon"], 4)})
@@ -265,10 +265,10 @@ def main():
     main_roads = join_lines(main_roads)
 
     missing = [n for n in [*PLACES, "Flughafen"] if n not in {p["name"] for p in places}]
-    if not city or not isar or len(lakes) < 2 or missing or not anchor or not main_roads:
+    if not city or not isar or len(lakes) < 2 or missing or len(anchors) < 2 or not main_roads:
         raise SystemExit(
             f"Incomplete data: city={len(city)} isar={len(isar)} lakes={len(lakes)} missing={missing} "
-            f"anchor={anchor} roads={len(main_roads)}"
+            f"anchors={list(anchors)} roads={len(main_roads)}"
         )
     print(f"Suburbs found: {[p['name'] for p in suburbs]}", file=sys.stderr)
 
@@ -282,7 +282,8 @@ def main():
         "roads": main_roads,
         "places": places,
         "suburbs": suburbs,
-        "anchor": anchor,
+        "anchor": anchors["Schwanthalerhöhe"] | {"name": "U Schwanthalerhöhe"},
+        "workplaces": [anchors["Schwanthalerhöhe"], anchors["Westfriedhof"]],
     }
     path = Path(__file__).resolve().parent.parent / "src" / "data" / "basemap.json"
     path.parent.mkdir(parents=True, exist_ok=True)
