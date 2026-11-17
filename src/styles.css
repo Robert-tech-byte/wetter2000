@@ -14,6 +14,9 @@
   --map-city: #e1e6ec;
   --map-road: #c4ccd5;
   --map-ring: #9aa6b2;
+  --pm-sea: #c7dbf0;
+  --pm-land: #fbfcfd;
+  --pm-coast: #7d8b9a;
   --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: light;
@@ -34,6 +37,9 @@
     --map-city: #1c252f;
     --map-road: #2f3a46;
     --map-ring: #4a5663;
+    --pm-sea: #10263d;
+    --pm-land: #232c37;
+    --pm-coast: #7b8a9a;
     color-scheme: dark;
   }
 }
@@ -52,6 +58,9 @@
   --map-city: #1c252f;
   --map-road: #2f3a46;
   --map-ring: #4a5663;
+  --pm-sea: #10263d;
+  --pm-land: #232c37;
+  --pm-coast: #7b8a9a;
   color-scheme: dark;
 }
 
@@ -1096,13 +1105,12 @@ table.mini small {
   border: 1px solid var(--line);
 }
 .pressure .sea {
-  fill: var(--map-water);
-  opacity: 0.35;
+  fill: var(--pm-sea);
 }
 .pressure .land {
-  fill: var(--map-land);
-  stroke: var(--map-road);
-  stroke-width: 0.7;
+  fill: var(--pm-land);
+  stroke: var(--pm-coast);
+  stroke-width: 0.9;
   stroke-linejoin: round;
 }
 .pressure .iso {
@@ -1117,14 +1125,14 @@ table.mini small {
 }
 .pressure .munich {
   fill: var(--fg);
-  stroke: var(--map-land);
+  stroke: var(--pm-land);
   stroke-width: 2;
 }
 .pressure .hl,
 .pressure .hv {
   font-family: var(--font-display);
   paint-order: stroke;
-  stroke: var(--map-land);
+  stroke: var(--pm-land);
   stroke-width: 4px;
   stroke-linejoin: round;
 }
