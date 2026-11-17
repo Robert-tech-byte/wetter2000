@@ -91,15 +91,13 @@ export function drawUnder(ctx: CanvasRenderingContext2D, view: View, c: MapColor
   ctx.lineCap = 'round';
   if (zoomed) {
     ctx.strokeStyle = c.road;
-    ctx.globalAlpha = 0.75;
-    ctx.lineWidth = 0.8;
+    ctx.lineWidth = 1.1;
     ctx.beginPath();
     for (const l of BASEMAP.roads) trace(ctx, l, px);
     ctx.stroke();
-    ctx.globalAlpha = 1;
   }
   ctx.strokeStyle = c.road;
-  ctx.lineWidth = zoomed ? 1.8 : view.size > 500 ? 1.4 : 1.1;
+  ctx.lineWidth = zoomed ? 2.4 : view.size > 500 ? 1.4 : 1.1;
   ctx.beginPath();
   for (const m of BASEMAP.motorways) for (const l of m.lines) trace(ctx, l, px);
   ctx.stroke();
@@ -142,36 +140,25 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
   }
   ctx.setLineDash([]);
 
-  const label = (text: string, x: number, y: number, weight: number, size: number, color: string) => {
+  // Labels are placed in priority order; a label that would overlap an earlier one is skipped.
+  const taken: [number, number, number, number][] = [];
+  const fits = (x0: number, y0: number, x1: number, y1: number) => {
+    if (taken.some(([a, b, c2, d]) => x0 < c2 && x1 > a && y0 < d && y1 > b)) return false;
+    taken.push([x0, y0, x1, y1]);
+    return true;
+  };
+  const label = (text: string, x: number, y: number, weight: number, size: number, color: string, force = false) => {
     ctx.font = `${weight} ${size}px Inter, system-ui, sans-serif`;
+    const w = ctx.measureText(text).width;
+    const left = ctx.textAlign === 'center' ? x - w / 2 : x;
+    if (!fits(left - 2, y - size, left + w + 2, y + 3) && !force) return false;
     ctx.lineWidth = 3;
     ctx.strokeStyle = c.land;
     ctx.strokeText(text, x, y);
     ctx.fillStyle = color;
     ctx.fillText(text, x, y);
+    return true;
   };
-  // Ring labels sit due south-west, where no place labels are drawn.
-  for (const r of rings) label(`${r} km`, cx - r * scale * 0.71 - 30, cy + r * scale * 0.71 + 12, 500, 9, c.label);
-
-  if (view.extent <= 25) {
-    for (const p of BASEMAP.suburbs) {
-      const [x, y] = px(p.at);
-      if (x < 10 || y < 10 || x > view.size - 10 || y > view.size - 10) continue;
-      ctx.textAlign = 'center';
-      label(p.name, x, y + 3, 500, small ? 9 : 10, c.label);
-      ctx.textAlign = 'start';
-    }
-  }
-
-  for (const p of BASEMAP.places) {
-    const [x, y] = px(p.at);
-    if (x < 0 || y < 0 || x > view.size || y > view.size) continue;
-    ctx.fillStyle = c.strong;
-    ctx.beginPath();
-    ctx.arc(x, y, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-    label(p.name, x + 4, y + 3, 500, small ? 9 : 11, c.label);
-  }
 
   if (route && route.length > 1) {
     ctx.strokeStyle = c.land;
@@ -197,7 +184,6 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
       ctx.stroke();
     }
   }
-
   ctx.beginPath();
   ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
   ctx.fillStyle = c.strong;
@@ -205,5 +191,29 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
   ctx.lineWidth = 2;
   ctx.strokeStyle = c.land;
   ctx.stroke();
-  label('München', cx + 8, cy + 4, 600, small ? 11 : 13, c.strong);
+  label('München', cx + 8, cy + 4, 600, small ? 11 : 13, c.strong, true);
+  for (const p of BASEMAP.places) {
+    const [x, y] = px(p.at);
+    if (x < 0 || y < 0 || x > view.size || y > view.size) continue;
+    if (!label(p.name, x + 4, y + 3, 500, small ? 9 : 11, c.label)) continue;
+    ctx.fillStyle = c.strong;
+    ctx.beginPath();
+    ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (view.extent <= 25) {
+    for (const p of BASEMAP.suburbs) {
+      const [x, y] = px(p.at);
+      if (x < 10 || y < 10 || x > view.size - 10 || y > view.size - 10) continue;
+      ctx.textAlign = 'center';
+      label(p.name, x, y + 3, 500, small ? 9 : 10, c.label);
+      ctx.textAlign = 'start';
+    }
+  }
+
+  // Ring labels sit due south-west, where no place labels are drawn.
+  for (const r of rings) label(`${r} km`, cx - r * scale * 0.71 - 30, cy + r * scale * 0.71 + 12, 500, 9, c.label);
+
+
 }
