@@ -1,11 +1,21 @@
 import { useState } from 'react';
+import type { FoehnSeries } from '../lib/api';
+import type { PressureData } from '../lib/pressure';
+import { GrowelaPanel } from './Growela';
 import type { CurrentObservation, EcmwfForecast } from '../lib/api';
 import { fmt0, fmt1, mm } from '../lib/format';
 import { clock, hhmm } from '../lib/time';
 import { describeBrightSkyIcon, describeWeather } from '../lib/weatherCodes';
 import { WeatherIcon } from './Icon';
 
-export function Now({ current, ecmwf }: { current: CurrentObservation | null; ecmwf: EcmwfForecast | null }) {
+interface Props {
+  current: CurrentObservation | null;
+  ecmwf: EcmwfForecast | null;
+  pressure: PressureData | null;
+  foehn: { munich: FoehnSeries; bozen: FoehnSeries } | null;
+}
+
+export function Now({ current, ecmwf, pressure, foehn }: Props) {
   const obs = current?.weather;
   const station = current?.sources?.[0];
   const model = ecmwf?.current;
@@ -14,6 +24,7 @@ export function Now({ current, ecmwf }: { current: CurrentObservation | null; ec
   const t = obs?.temperature ?? model?.temperature_2m ?? null;
   const cond = describeBrightSkyIcon(obs?.icon) ?? describeWeather(model?.weather_code);
   const [more, setMore] = useState(false);
+  const [gw, setGw] = useState(false);
   const hi = d?.temperature_2m_max[0];
   const lo = d?.temperature_2m_min[0];
 
@@ -24,6 +35,19 @@ export function Now({ current, ecmwf }: { current: CurrentObservation | null; ec
         <WeatherIcon name={cond.icon} className="now-icon" />
       </div>
       <p className="now-cond">{cond.text}</p>
+      <div className="now-gw">
+        <button
+          type="button"
+          className="gw-button"
+          aria-expanded={gw}
+          aria-controls="growela"
+          title="Großwetterlage"
+          onClick={() => setGw((v) => !v)}
+        >
+          GroWeLa
+        </button>
+      </div>
+      {gw && <GrowelaPanel pressure={pressure} foehn={foehn} />}
       <div className="now-hl">
         <span>{hi != null && lo != null ? `H ${fmt0(hi)}° · T ${fmt0(lo)}°` : ''}</span>
         <button type="button" className="toggle" aria-expanded={more} aria-controls="now-more" onClick={() => setMore((m) => !m)}>

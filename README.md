@@ -12,6 +12,7 @@ Eine Spalte, drei Ebenen: Auf einen Blick steht die Antwort, Antippen zeigt die 
 - **Regen in der nächsten Stunde:** ein Satz und ein Streifen mit 12 Fünf-Minuten-Werten.
 - **Regenradar:** DWD-Radarkomposit in 1-km-Blöcken (5 min) der letzten Stunde plus DWD-Nowcast für 60 Minuten, mit Überblendung. Übersicht ±15 km, Antippen öffnet ±40 km.
 - **Grundkarte:** eigene Vektorkarte ohne Kartenkacheln: Stadtgrenze, Stadtteile, Hauptstraßen, Autobahnen, Isar, Seen, Orte, Entfernungsringe.
+- **GroWeLa:** Knopf über „Mehr zu jetzt“, erklärt die Großwetterlage (Anströmrichtung, zyklonal/antizyklonal, Lage von Hoch und Tief, Bedeutung für München, Trend 3 Tage) aus dem ECMWF-Luftdruck.
 - **Föhn:** Kennzeichen an Tagen, an denen laut ECMWF Föhn wahrscheinlich ist (Druck Bozen − München ≥ 4 hPa, Höhenwind S–SW, Luftfeuchte < 55 %).
 - **Tage:** 15 Tage als Liste mit Regen-Spalte (Wahrscheinlichkeit und Menge der Modelle für 3 Tage, danach ECMWF-Menge). Antippen zeigt den stündlichen Verlauf von Temperatur und Regen; für heute bis übermorgen darunter, wie sicher Temperatur und Regen sind (7 Modelle ≤ 7 km). „Details“ für Power-User: Luftdruckkarte Europa um 12 Uhr (Isobaren, Hochs/Tiefs), Böen, Sonne, Modellspannen, Einzelmodelle, ICON-D2-EPS.
 

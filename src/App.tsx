@@ -45,7 +45,7 @@ export default function App() {
           Lade Wetterdaten …
         </div>
       ) : (
-        <Now current={w.current.data} ecmwf={w.ecmwf.data} />
+        <Now current={w.current.data} ecmwf={w.ecmwf.data} pressure={pressure} foehn={w.foehn.data} />
       )}
 
       <Hourly

@@ -1183,8 +1183,7 @@ table.mini small {
 
 /* --- Marke: Messwerte in Mono --- */
 .radar-controls output,
-.stand,
-.pressure figcaption {
+.stand {
   font-family: var(--font-mono);
   font-size: 0.8rem;
 }
@@ -1296,4 +1295,62 @@ table.mini small {
 .foehn-note .foehn {
   margin-top: 1px;
   flex: none;
+}
+
+/* --- GroWeLa --- */
+.now-gw {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.gw-button {
+  font: 600 0.78rem var(--font-body);
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--link);
+  color: var(--link);
+  background: transparent;
+  cursor: pointer;
+}
+.gw-button[aria-expanded='true'] {
+  background: var(--link);
+  color: var(--cta-fg);
+}
+.growela {
+  margin: 10px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--link);
+  border-radius: 14px;
+  background: var(--surface);
+  display: grid;
+  gap: 10px;
+}
+.gw-kicker {
+  margin: 0;
+  font: 600 0.7rem var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gw-name {
+  margin: 0;
+  font: 600 1.2rem var(--font-display);
+  color: var(--brand-text);
+}
+.gw-flow,
+.gw-trend {
+  margin: 0;
+  font-size: 0.92rem;
+}
+.gw-trend {
+  font-weight: 500;
+}
+.gw-meaning {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.92rem;
 }

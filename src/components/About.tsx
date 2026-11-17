@@ -37,6 +37,13 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             Regen an der Stelle gelesen, an der man dann ungefähr ist. Bis zum Ende des Nowcasts (ca. +60 min) mit
             dem DWD-Radar in 5-Minuten-Schritten, danach mit ICON-D2 in 15-Minuten-Schritten (Streckenmitte, ungenauer). „Trocken“ heißt unter 0,05 mm auf der ganzen Fahrt. Es wird nichts gespeichert.
           </p>
+          <h3>GroWeLa (Großwetterlage)</h3>
+          <p>
+            Vereinfachte Einordnung aus dem ECMWF-Luftdruck um 12 Uhr: Die Anströmrichtung (Nordost, Südost, Südwest,
+            Nordwest) folgt aus dem Druckgefälle über Süddeutschland, bei sehr schwachem Gefälle gilt die Lage als
+            „ohne klare Strömung“. „Zyklonal“ heißt, dass der Luftdruck über München niedriger ist als ringsum.
+            Angelehnt an die objektive Wetterlagenklassifikation des DWD, aber nicht identisch.
+          </p>
           <h3>Föhn</h3>
           <p>
             „Föhn“ erscheint an einem Tag, wenn laut ECMWF-Modell tagsüber mindestens 2 Stunden lang gleichzeitig gilt:
