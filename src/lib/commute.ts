@@ -21,13 +21,16 @@ export type DirectionId = (typeof DIRECTIONS)[number]['id'];
 
 export type Trip = 'hin' | 'heim';
 
-/** Straight route between home (anchor) and work, oriented by trip direction. */
-export function route(anchor: Km, dir: DirectionId, minutes: number, trip: Trip): Km[] {
-  const deg = DIRECTIONS.find((d) => d.id === dir)!.deg;
+/**
+ * Straight route between home and work. `homeDir` is the direction in which home lies,
+ * seen from the workplace. "hin" = home → work, "heim" = work → home.
+ */
+export function route(work: Km, homeDir: DirectionId, minutes: number, trip: Trip): Km[] {
+  const deg = DIRECTIONS.find((d) => d.id === homeDir)!.deg;
   const dist = (SPEED_KMH * minutes) / 60;
   const rad = (deg * Math.PI) / 180;
-  const work: Km = [anchor[0] + Math.sin(rad) * dist, anchor[1] + Math.cos(rad) * dist];
-  return trip === 'hin' ? [anchor, work] : [work, anchor];
+  const home: Km = [work[0] + Math.sin(rad) * dist, work[1] + Math.cos(rad) * dist];
+  return trip === 'hin' ? [home, work] : [work, home];
 }
 
 function along(r: Km[], f: number): Km {

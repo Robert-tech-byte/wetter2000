@@ -14,6 +14,7 @@ interface RawBasemap {
   places: { name: string; lat: number; lon: number }[];
   suburbs?: { name: string; lat: number; lon: number }[];
   anchor?: { name: string; lat: number; lon: number };
+  workplaces?: { name: string; lat: number; lon: number }[];
 }
 
 const raw = data as unknown as RawBasemap;
@@ -29,10 +30,29 @@ export const BASEMAP = {
   suburbs: (raw.suburbs ?? []).map((p) => ({ name: p.name, at: toKm([p.lat, p.lon]) as Km })),
 };
 
-/** U-Bahn Schwanthalerhöhe – reference point for the commute check (fallback: approx. position). */
-export const ANCHOR: { name: string; at: Km; lat: number; lon: number } = (() => {
-  const a = raw.anchor ?? { name: 'U Schwanthalerhöhe', lat: 48.1336, lon: 11.5403 };
-  return { ...a, at: toKm([a.lat, a.lon]) };
+export interface Workplace {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  at: Km;
+  /** true if the position is an estimate (map data not yet updated). */
+  approx: boolean;
+}
+
+/** U-Bahn stations used as workplaces for the commute check. */
+export const WORKPLACES: Workplace[] = (() => {
+  const fromData = new Map((raw.workplaces ?? []).map((w) => [w.name, w]));
+  if (raw.anchor && !fromData.has('Schwanthalerhöhe')) fromData.set('Schwanthalerhöhe', { ...raw.anchor, name: 'Schwanthalerhöhe' });
+  const fallback: Record<string, [number, number]> = {
+    Schwanthalerhöhe: [48.1336, 11.5403],
+    Westfriedhof: [48.1584, 11.5306],
+  };
+  return Object.entries(fallback).map(([name, [lat, lon]]) => {
+    const d = fromData.get(name);
+    const p = d ? { lat: d.lat, lon: d.lon } : { lat, lon };
+    return { id: name.toLowerCase(), name, ...p, at: toKm([p.lat, p.lon]), approx: !d };
+  });
 })();
 
 export interface MapColors {

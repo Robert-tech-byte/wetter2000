@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchMinutely15 } from '../lib/api';
-import { ANCHOR } from '../lib/basemap';
+import { WORKPLACES } from '../lib/basemap';
 import {
   best,
   DIRECTIONS,
@@ -20,29 +20,22 @@ import { fromKm, type Km } from '../lib/geo';
 import type { RadarData } from '../lib/radar';
 import { clock } from '../lib/time';
 
-const STORE = 'wetter2000.commute';
+/** Settings used to be stored on the device; remove them once so nobody inherits someone else's choice. */
+function forgetOldSettings() {
+  try {
+    localStorage.removeItem('wetter2000.commute');
+  } catch {
+    /* storage unavailable */
+  }
+}
 
-interface Saved {
+interface Choice {
+  work: string | null;
   dir: DirectionId | null;
   duration: Duration | null;
 }
 
-function load(): Saved {
-  try {
-    const v = JSON.parse(localStorage.getItem(STORE) ?? '{}');
-    return { dir: v.dir ?? null, duration: v.duration ?? null };
-  } catch {
-    return { dir: null, duration: null };
-  }
-}
-
-function save(v: Saved) {
-  try {
-    localStorage.setItem(STORE, JSON.stringify(v));
-  } catch {
-    /* storage unavailable – settings just aren't remembered */
-  }
-}
+const EMPTY: Choice = { work: null, dir: null, duration: null };
 
 interface Props {
   radar: RadarData | null;
@@ -53,14 +46,15 @@ export function Commute({ radar, onRoute }: Props) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [trip, setTrip] = useState<Trip>(() => (new Date().getHours() < 12 ? 'hin' : 'heim'));
-  const [saved, setSaved] = useState<Saved>(load);
+  const [choice, setChoice] = useState<Choice>(EMPTY);
   const [slots, setSlots] = useState<{ start: Date; mm15: number }[] | null>(null);
   const [now, setNow] = useState(() => new Date());
 
-  const ready = saved.dir != null && saved.duration != null;
+  const workplace = WORKPLACES.find((w) => w.id === choice.work) ?? null;
+  const ready = workplace != null && choice.dir != null && choice.duration != null;
   const route = useMemo(
-    () => (ready ? makeRoute(ANCHOR.at, saved.dir!, saved.duration!, trip) : null),
-    [ready, saved, trip],
+    () => (ready ? makeRoute(workplace!.at, choice.dir!, choice.duration!, trip) : null),
+    [ready, workplace, choice, trip],
   );
 
   useEffect(() => onRoute(open && route ? route : null), [open, route, onRoute]);
@@ -89,23 +83,19 @@ export function Commute({ radar, onRoute }: Props) {
   }, [open, route]);
 
   const options = useMemo(() => {
-    if (!route || !saved.duration) return [] as Option[];
-    const r = radar ? radarOptions(radar, route, saved.duration, now) : [];
+    if (!route || !choice.duration) return [] as Option[];
+    const r = radar ? radarOptions(radar, route, choice.duration, now) : [];
     const lastRadar = r.length ? r[r.length - 1].depart : -15;
-    const m = slots ? modelOptions(slots, saved.duration, now, lastRadar + 15) : [];
+    const m = slots ? modelOptions(slots, choice.duration, now, lastRadar + 15) : [];
     return [...r, ...m];
-  }, [radar, route, saved.duration, slots, now]);
+  }, [radar, route, choice.duration, slots, now]);
 
   const radarOnly = options.filter((o) => o.source === 'radar');
   const first = options[0] ?? null;
   const pick = best(radarOnly) ?? best(options);
   const pickAll = best(options);
 
-  const update = (v: Partial<Saved>) => {
-    const next = { ...saved, ...v };
-    setSaved(next);
-    save(next);
-  };
+  const update = (v: Partial<Choice>) => setChoice((s) => ({ ...s, ...v }));
 
   if (!open) {
     return (
@@ -113,9 +103,13 @@ export function Commute({ radar, onRoute }: Props) {
         type="button"
         className="commute-cta"
         onClick={() => {
+          forgetOldSettings();
           setNow(new Date());
+          setChoice(EMPTY);
+          setSlots(null);
+          setTrip(new Date().getHours() < 12 ? 'hin' : 'heim');
           setOpen(true);
-          setEditing(!ready);
+          setEditing(true);
         }}
       >
         <span>Komme ich trocken an?</span>
@@ -145,14 +139,22 @@ export function Commute({ radar, onRoute }: Props) {
 
       {(editing || !ready) && (
         <div className="commute-setup">
-          <p className="setup-q">Wo liegt die Arbeit von der Schwanthalerhöhe aus?</p>
-          <div className="compass" role="radiogroup" aria-label="Richtung der Arbeit">
+          <p className="setup-q">Wo ist die Arbeit?</p>
+          <div className="seg wide" role="radiogroup" aria-label="Arbeitsort">
+            {WORKPLACES.map((w) => (
+              <button key={w.id} type="button" role="radio" aria-checked={choice.work === w.id} onClick={() => update({ work: w.id })}>
+                {w.name}
+              </button>
+            ))}
+          </div>
+          <p className="setup-q">In welcher Richtung liegt das Zuhause von der Arbeit aus?</p>
+          <div className="compass" role="radiogroup" aria-label="Richtung des Zuhauses">
             {DIRECTIONS.map((d) => (
               <button
                 key={d.id}
                 type="button"
                 role="radio"
-                aria-checked={saved.dir === d.id}
+                aria-checked={choice.dir === d.id}
                 aria-label={d.label}
                 className="needle"
                 style={{ transform: `rotate(${d.deg}deg) translateY(-62px) rotate(${-d.deg}deg)` }}
@@ -162,20 +164,20 @@ export function Commute({ radar, onRoute }: Props) {
               </button>
             ))}
             <span className="compass-center" aria-hidden="true">
-              {saved.dir && (
-                <i style={{ transform: `rotate(${DIRECTIONS.find((d) => d.id === saved.dir)!.deg}deg)` }} />
+              {choice.dir && (
+                <i style={{ transform: `rotate(${DIRECTIONS.find((d) => d.id === choice.dir)!.deg}deg)` }} />
               )}
             </span>
           </div>
           <p className="setup-q">Wie lange fährst du?</p>
           <div className="seg wide" role="radiogroup" aria-label="Fahrzeit">
             {DURATIONS.map((m) => (
-              <button key={m} type="button" role="radio" aria-checked={saved.duration === m} onClick={() => update({ duration: m })}>
+              <button key={m} type="button" role="radio" aria-checked={choice.duration === m} onClick={() => update({ duration: m })}>
                 {m} min
               </button>
             ))}
           </div>
-          <p className="note">Gerechnet mit 20 km/h auf direkter Linie. Wird auf diesem Gerät gespeichert.</p>
+          <p className="note">Gerechnet mit 20 km/h auf direkter Linie. Es wird nichts gespeichert.</p>
           {ready && (
             <button type="button" className="primary" onClick={() => setEditing(false)}>
               Prüfen
@@ -195,7 +197,7 @@ export function Commute({ radar, onRoute }: Props) {
               </p>
               <p className="verdict-sub">
                 {isDry(first)
-                  ? `Die nächsten ${saved.duration} Minuten bleibt es auf der Strecke trocken.`
+                  ? `Die nächsten ${choice.duration} Minuten bleibt es auf der Strecke trocken.`
                   : `Ca. ${fmt1(first.mm)} mm unterwegs.`}{' '}
                 {!isDry(first) && pick && pick.depart > 0 && (
                   <>
@@ -228,8 +230,8 @@ export function Commute({ radar, onRoute }: Props) {
                 ))}
               </ol>
               <p className="note">
-                {trip === 'hin' ? 'Schwanthalerhöhe → Arbeit' : 'Arbeit → Schwanthalerhöhe'} ·{' '}
-                {DIRECTIONS.find((d) => d.id === saved.dir)!.label}, {saved.duration} min · Radar bis{' '}
+                {trip === 'hin' ? `Zuhause → ${workplace!.name}` : `${workplace!.name} → Zuhause`} · Zuhause im{' '}
+                {DIRECTIONS.find((d) => d.id === choice.dir)!.label}, {choice.duration} min · Radar bis{' '}
                 {radarOnly.length ? clock(radarOnly[radarOnly.length - 1].departAt) : '–'}, danach Modell (blasser).{' '}
                 <button type="button" className="link" onClick={() => setEditing(true)}>
                   ändern

@@ -23,14 +23,16 @@ function radar(rain: (frame: number, x: number, y: number) => number, frames = 1
 const now = new Date('2026-11-17T14:00:00Z');
 
 describe('commute', () => {
-  it('route length follows 20 km/h', () => {
+  it('route: home lies in the chosen direction from work, 20 km/h', () => {
+    // Home 10 km east of work; "hin" goes home → work.
     const [a, b] = route([0, 0], 'O', 30, 'hin');
-    expect(a).toEqual([0, 0]);
-    expect(b[0]).toBeCloseTo(10);
-    expect(b[1]).toBeCloseTo(0);
+    expect(a[0]).toBeCloseTo(10);
+    expect(a[1]).toBeCloseTo(0);
+    expect(b).toEqual([0, 0]);
+    // "heim" goes work → home (5 km north).
     const back = route([0, 0], 'N', 15, 'heim');
-    expect(back[0][1]).toBeCloseTo(5);
-    expect(back[1]).toEqual([0, 0]);
+    expect(back[0]).toEqual([0, 0]);
+    expect(back[1][1]).toBeCloseTo(5);
   });
 
   it('dry radar → leave now', () => {
