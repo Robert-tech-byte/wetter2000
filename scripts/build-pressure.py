@@ -18,6 +18,14 @@ LONS = [-25 + 2.5 * i for i in range(29)]  # -25 … 45
 BATCH = 50
 URL = "https://api.open-meteo.com/v1/forecast"
 MODELS = ["ecmwf_ifs025", "ecmwf_ifs"]
+# Total time budget so a slow API never blocks publishing for long.
+BUDGET_S = 240
+PUBLISHED = "https://robert-tech-byte.github.io/wetter2000/pressure.json"
+START = time.monotonic()
+
+
+def remaining():
+    return BUDGET_S - (time.monotonic() - START)
 
 
 def fetch(points, model):
@@ -32,17 +40,34 @@ def fetch(points, model):
     }
     url = f"{URL}?{urllib.parse.urlencode(q)}"
     last = None
-    for attempt in range(4):
+    for attempt in range(3):
+        if remaining() < 5:
+            raise RuntimeError("time budget exhausted")
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "wetter2000-pressure-build"})
-            with urllib.request.urlopen(req, timeout=120) as r:
+            with urllib.request.urlopen(req, timeout=min(45, remaining())) as r:
                 data = json.load(r)
             return data if isinstance(data, list) else [data]
         except Exception as e:  # noqa: BLE001
             last = e
             print(f"  attempt {attempt + 1}: {e}", file=sys.stderr)
-            time.sleep(4 * (attempt + 1))
+            time.sleep(min(3 * (attempt + 1), max(0, remaining())))
     raise RuntimeError(last)
+
+
+def keep_published(path):
+    """Fallback: reuse the currently published file (stale map is better than none)."""
+    try:
+        with urllib.request.urlopen(PUBLISHED, timeout=20) as r:
+            data = json.load(r)
+        if not data.get("days"):
+            raise ValueError("empty")
+        path.write_text(json.dumps(data, separators=(",", ":")))
+        print(f"Kept published pressure.json from {data.get('generated')}")
+        return True
+    except Exception as e:  # noqa: BLE001
+        print(f"No published pressure.json to keep: {e}", file=sys.stderr)
+        return False
 
 
 def noon_values(loc):
@@ -68,6 +93,8 @@ def assemble(per_point, lats, lons):
 
 
 def main():
+    path = Path(__file__).resolve().parent.parent / "public" / "pressure.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
     points = [(la, lo) for la in LATS for lo in LONS]
     for model in MODELS:
         try:
@@ -79,6 +106,8 @@ def main():
         except Exception as e:  # noqa: BLE001
             print(f"model {model} failed: {e}", file=sys.stderr)
     else:
+        if keep_published(path):
+            return
         raise SystemExit("pressure data not available")
     out = {
         "source": "ECMWF via Open-Meteo (CC BY 4.0)",
@@ -88,8 +117,6 @@ def main():
         "lons": LONS,
         "days": assemble(per_point, LATS, LONS),
     }
-    path = Path(__file__).resolve().parent.parent / "public" / "pressure.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, separators=(",", ":")))
     print(f"Wrote {path} ({path.stat().st_size // 1024} KB, {len(out['days'])} days, model {model})")
 

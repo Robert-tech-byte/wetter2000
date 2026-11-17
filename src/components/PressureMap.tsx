@@ -14,6 +14,13 @@ const LAND = (europe as unknown as { rings: Pt[][] }).rings
   .map((r) => `M${r.map((p) => px(p).join(',')).join('L')}Z`)
   .join('');
 
+function stand(generated: string): string {
+  const d = new Date(generated.replace(/Z$/, ':00Z'));
+  if (Number.isNaN(d.getTime())) return '';
+  const f = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
+  return `, Stand ${f.format(d)} Uhr`;
+}
+
 /** Europe sea-level pressure at 12:00: isobars every 5 hPa, highs (H) and lows (T). */
 export function PressureMap({ data, date }: { data: PressureData; date: string }) {
   const day = data.days.find((d) => d.date === date);
@@ -59,7 +66,8 @@ export function PressureMap({ data, date }: { data: PressureData; date: string }
         })}
       </svg>
       <figcaption className="note">
-        Luftdruck auf Meereshöhe um 12 Uhr, Linien alle 5 hPa · H = Hoch, T = Tief · {data.model.startsWith('ecmwf') ? 'ECMWF' : data.model} über Open-Meteo, Karte: Natural Earth
+        Luftdruck auf Meereshöhe um 12 Uhr, Linien alle 5 hPa · H = Hoch, T = Tief ·{' '}
+        {data.model.startsWith('ecmwf') ? 'ECMWF' : data.model} über Open-Meteo{stand(data.generated)}, Karte: Natural Earth
       </figcaption>
     </figure>
   );

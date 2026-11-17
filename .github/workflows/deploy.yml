@@ -29,6 +29,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - name: Load Europe pressure map data
+        timeout-minutes: 6
+        continue-on-error: true
         run: python3 scripts/build-pressure.py || echo "::warning::Luftdruckdaten nicht verfügbar – Karte wird ausgeblendet"
       - run: npm run build
       - uses: actions/configure-pages@v5
