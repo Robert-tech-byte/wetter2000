@@ -48,7 +48,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
           <h3>14-Tage-Trend</h3>
           <p>
             ECMWF-Ensemble (Kontrolllauf und 50 Varianten, 0,25°) über Open-Meteo, alle 6 Stunden neu geladen. Je Tag
-            werden Höchst- und Tiefstwert jedes Laufs bestimmt. Offener Punkt und Zahl: Median, zur Orientierung verbunden. Kräftiger Strich: mittlere 50 %
+            werden Höchst- und Tiefstwert jedes Laufs bestimmt. Offener Punkt und Zahl: Median, zur Orientierung verbunden. Dunkler Querstrich: der einzelne ECMWF-Hauptlauf, aus dem die Werte in den Tageszeilen stammen; liegt er weit neben den Strichen, ist er ein Ausreißer. Kräftiger Strich: mittlere 50 %
             der Läufe (wahrscheinlich), feiner Strich: mittlere 80 % (möglich). Regen: Füllung = Median der Tagessumme,
             Rahmen = 90. Perzentil, Zahl darunter = Anteil der Läufe mit mindestens 0,1 mm.
           </p>

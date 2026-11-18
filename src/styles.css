@@ -1511,6 +1511,14 @@ table.mini small {
 .t-min .t-val {
   fill: var(--t-min);
 }
+.t-chart .t-det {
+  stroke: var(--fg);
+  stroke-width: 1.6;
+  stroke-linecap: butt;
+}
+.t-det-c {
+  color: var(--fg);
+}
 .t-rain {
   fill: var(--accent);
 }

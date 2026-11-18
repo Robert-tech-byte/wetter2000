@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { EcmwfForecast } from '../lib/api';
 import { localHourKey } from '../lib/time';
 import { next14, trendSummary, type Pct, type TrendData, type TrendDay } from '../lib/trend';
 
@@ -26,17 +27,25 @@ function openDay(date: string) {
  * 14-day trend (variant D2 + R2): for maximum (red) and minimum (blue) temperature an
  * uncertainty stroke per day – thin for the possible range (80 % of ensemble runs), thick for
  * the likely range (50 %) – and the median as an open dot on a connecting line, value beside it.
+ * A short dark dash marks the deterministic ECMWF run, i.e. the values in the day rows below,
+ * so it is visible when that single run deviates from the ensemble.
  * Rain below: frame = possible amount (90th percentile), fill = likely amount, % = probability.
  */
-export function Trend14({ data }: { data: TrendData | null }) {
+export function Trend14({ data, ecmwf }: { data: TrendData | null; ecmwf: EcmwfForecast | null }) {
   const today = localHourKey().slice(0, 10);
   const days = useMemo(() => (data ? next14(data, today) : []), [data, today]);
+  const det = useMemo(() => {
+    const m = new Map<string, { max: number | null; min: number | null }>();
+    ecmwf?.daily.time.forEach((t, i) => m.set(t, { max: ecmwf.daily.temperature_2m_max[i], min: ecmwf.daily.temperature_2m_min[i] }));
+    return m;
+  }, [ecmwf]);
   if (days.length < 7) return null;
+  const detOf = (d: TrendDay, k: 'max' | 'min') => det.get(d.date)?.[k] ?? null;
 
   const n = days.length;
   const step = (W - WL - WR) / n;
   const x = (i: number) => WL + (i + 0.5) * step;
-  const temps = days.flatMap((d) => [d.max.p90, d.min.p10]);
+  const temps = days.flatMap((d) => [d.max.p90, d.min.p10, detOf(d, 'max') ?? d.max.p90, detOf(d, 'min') ?? d.min.p10]);
   const lo = Math.floor(Math.min(...temps) - 1);
   const hi = Math.ceil(Math.max(...temps) + 1);
   const y = (v: number) => B - ((v - lo) / (hi - lo)) * (B - T);
@@ -49,8 +58,8 @@ export function Trend14({ data }: { data: TrendData | null }) {
 
   // Max slightly left, min slightly right so overlapping ranges stay distinguishable;
   // the value sits above (max) or below (min) the dot, clear of the connecting line.
-  const series = (get: (d: TrendDay) => Pct, cls: string, dx: number, dy: number) => (
-    <g className={cls}>
+  const series = (get: (d: TrendDay) => Pct, k: 'max' | 'min', dx: number, dy: number) => (
+    <g className={`t-${k}`}>
       {days.map((d, i) => {
         const p = get(d);
         return (
@@ -64,6 +73,10 @@ export function Trend14({ data }: { data: TrendData | null }) {
       {days.map((d, i) => (
         <circle key={`c${d.date}`} cx={x(i) + dx} cy={y(get(d).p50)} r={2.3} className="t-dot" />
       ))}
+      {days.map((d, i) => {
+        const v = detOf(d, k);
+        return v == null ? null : <line key={`m${d.date}`} x1={x(i) + dx - 4.5} x2={x(i) + dx + 4.5} y1={y(v)} y2={y(v)} className="t-det" />;
+      })}
       {days.map((d, i) => (
         <text key={`v${d.date}`} x={x(i) + dx + 3} y={y(get(d).p50) + dy} className="t-val">
           {num(get(d).p50)}
@@ -90,8 +103,8 @@ export function Trend14({ data }: { data: TrendData | null }) {
           </g>
         ))}
         {weekBreak > 0 && <line x1={WL + weekBreak * step} x2={WL + weekBreak * step} y1={T} y2={RT + RH} className="t-week" />}
-        {series((d) => d.min, 't-min', 1.8, 11)}
-        {series((d) => d.max, 't-max', -1.8, -4.5)}
+        {series((d) => d.min, 'min', 1.8, 11)}
+        {series((d) => d.max, 'max', -1.8, -4.5)}
 
         <text x={WL - 4} y={RT + RH} textAnchor="end" className="t-axis">
           mm
@@ -125,7 +138,7 @@ export function Trend14({ data }: { data: TrendData | null }) {
             className="t-hit"
             role="button"
             tabIndex={0}
-            aria-label={`${wd(d.date)}: Höchstwert ${num(d.max.p50)} Grad, Tiefstwert ${num(d.min.p50)} Grad, Regenwahrscheinlichkeit ${Math.round(d.rain.prob * 100)} Prozent`}
+            aria-label={`${wd(d.date)}: Höchstwert ${num(d.max.p50)} Grad, Tiefstwert ${num(d.min.p50)} Grad${detOf(d, 'max') != null ? `, Hauptlauf ${num(detOf(d, 'max')!)} und ${num(detOf(d, 'min') ?? NaN)} Grad` : ''}, Regenwahrscheinlichkeit ${Math.round(d.rain.prob * 100)} Prozent`}
             onClick={() => openDay(d.date)}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openDay(d.date)}
           />
@@ -135,6 +148,9 @@ export function Trend14({ data }: { data: TrendData | null }) {
         <span className="t-max-c">○ Höchstwert</span>
         <span className="t-min-c">○ Tiefstwert</span>
         <span>dick 50 %, dünn 80 % der Läufe</span>
+        <span>
+          <b className="t-det-c">▬</b> Hauptlauf (Werte unten in den Tagen)
+        </span>
         <span>
           <b className="t-rain-c">▮</b> Regen wahrscheinlich, ▯ möglich, % Wahrscheinlichkeit
         </span>
