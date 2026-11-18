@@ -1406,26 +1406,20 @@ table.mini small {
   font-weight: 600;
 }
 
-/* 14-Tage-Trend (Rams-reduziert) */
+/* 14-Tage-Trend (D2 + R2) */
 :root {
-  --t-max: #d9531e;
-  --t-min: #3d6a8c;
-  --t-rain: #5d7f99;
-  --t-zero: #a9a69c;
+  --t-max: #d9480f;
+  --t-min: #1c64d2;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --t-max: #f0743f;
-    --t-min: #7fa6c4;
-    --t-rain: #8aa6bd;
-    --t-zero: #5c5b55;
+    --t-max: #ff8a5c;
+    --t-min: #74b0ff;
   }
 }
 :root[data-theme='dark'] {
-  --t-max: #f0743f;
-  --t-min: #7fa6c4;
-  --t-rain: #8aa6bd;
-  --t-zero: #5c5b55;
+  --t-max: #ff8a5c;
+  --t-min: #74b0ff;
 }
 .trend14 {
   display: grid;
@@ -1435,10 +1429,6 @@ table.mini small {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-}
-.t-unit {
-  font: 400 0.68rem var(--font-mono);
-  color: var(--muted);
 }
 .t-sum {
   margin: 0;
@@ -1452,62 +1442,83 @@ table.mini small {
   overflow: visible;
 }
 .t-chart text {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 9px;
 }
 .t-grid {
   stroke: var(--line);
-  stroke-width: 0.6;
+  stroke-width: 1;
 }
 .t-zero {
-  stroke: var(--t-zero);
-  stroke-width: 0.8;
+  stroke: var(--muted);
+  stroke-opacity: 0.5;
+}
+.t-week {
+  stroke: var(--line);
+  stroke-dasharray: 2 3;
 }
 .t-axis,
-.t-pct,
 .t-day {
   fill: var(--muted);
 }
+.t-chart .t-pct {
+  fill: var(--muted);
+  font-size: 7.5px;
+}
 .t-day.strong {
-  fill: var(--fg);
   font-weight: 600;
 }
 .t-poss {
-  stroke-width: 0.8;
-  opacity: 0.55;
+  stroke-width: 1.5;
+  stroke-opacity: 0.4;
+  stroke-linecap: round;
 }
 .t-likely {
-  stroke-width: 3;
-  stroke-linecap: butt;
+  stroke-width: 4;
+  stroke-opacity: 0.8;
+  stroke-linecap: round;
 }
-.t-max line {
-  stroke: var(--t-max);
-}
-.t-min line {
-  stroke: var(--t-min);
+.t-line {
+  fill: none;
+  stroke-width: 1.1;
+  stroke-opacity: 0.7;
+  stroke-linejoin: round;
 }
 .t-dot {
-  stroke: var(--bg);
-  stroke-width: 1.2;
+  fill: var(--surface);
+  stroke-width: 1.5;
 }
+.t-max line,
+.t-max .t-line,
 .t-max .t-dot {
-  fill: var(--t-max);
+  stroke: var(--t-max);
 }
+.t-min line,
+.t-min .t-line,
 .t-min .t-dot {
-  fill: var(--t-min);
+  stroke: var(--t-min);
 }
 .t-chart .t-val {
-  font-family: var(--font-body);
-  font-weight: 500;
-  fill: var(--fg);
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+.t-max .t-val {
+  fill: var(--t-max);
+}
+.t-min .t-val {
+  fill: var(--t-min);
 }
 .t-rain {
-  fill: var(--t-rain);
+  fill: var(--accent);
 }
 .t-rain-poss {
   fill: none;
-  stroke: var(--t-rain);
-  stroke-width: 0.7;
+  stroke: var(--accent);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
 }
 .t-hit {
   fill: transparent;
@@ -1521,7 +1532,7 @@ table.mini small {
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 12px;
+  gap: 4px 12px;
   font-size: 0.72rem;
   color: var(--muted);
 }
@@ -1535,5 +1546,5 @@ table.mini small {
   color: var(--t-min);
 }
 .t-rain-c {
-  color: var(--t-rain);
+  color: var(--accent);
 }
