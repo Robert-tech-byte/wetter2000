@@ -76,11 +76,11 @@ export function Trend14({ data }: { data: TrendData | null }) {
     <section className="trend14" aria-labelledby="trend-title">
       <div className="t-head">
         <h2 id="trend-title" className="block-title">
-          14 Tage
+          {days.length} Tage
         </h2>
       </div>
       <p className="t-sum">{trendSummary(days)}</p>
-      <svg viewBox={`0 0 ${W} ${H}`} className="t-chart" role="img" aria-label="Temperatur- und Regentrend der nächsten 14 Tage">
+      <svg viewBox={`0 0 ${W} ${H}`} className="t-chart" role="img" aria-label={`Temperatur- und Regentrend der nächsten ${days.length} Tage`}>
         {ticks.map((v) => (
           <g key={`g${v}`}>
             <line x1={WL} x2={W - WR} y1={y(v)} y2={y(v)} className={v === 0 ? 't-zero' : 't-grid'} />

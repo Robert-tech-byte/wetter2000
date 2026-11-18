@@ -110,6 +110,9 @@ def summarize(hourly):
             continue
         ctrl = dict(temps).get("temperature_2m") or temps[0][1]
         hours = sum(1 for i in idx if ctrl[i] is not None)
+        # The last forecast day is cut off (e.g. ends at 15:00): its max/min would be wrong.
+        if hours < 20:
+            continue
         pct = lambda arr: {f"p{q}": round(percentile(arr, q), 1) for q in (10, 25, 50, 75, 90)}
         days.append(
             {
