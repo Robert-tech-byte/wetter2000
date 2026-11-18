@@ -39,10 +39,11 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
           </p>
           <h3>GroWeLa (Großwetterlage)</h3>
           <p>
-            Vereinfachte Einordnung aus dem ECMWF-Luftdruck um 12 Uhr: Die Anströmrichtung (Nordost, Südost, Südwest,
-            Nordwest) folgt aus dem Druckgefälle über Süddeutschland, bei sehr schwachem Gefälle gilt die Lage als
-            „ohne klare Strömung“. „Zyklonal“ heißt, dass der Luftdruck über München niedriger ist als ringsum.
-            Angelehnt an die objektive Wetterlagenklassifikation des DWD, aber nicht identisch.
+            Vereinfachte Einordnung aus dem ECMWF-Luftdruck um 12 Uhr. Die Richtung folgt aus dem Druckgefälle über
+            Süddeutschland. Zyklonal oder antizyklonal: zuerst nach dem Luftdruck über München (bis 1005 hPa zyklonal,
+            ab 1020 hPa antizyklonal), dann nach einem nahen Tief (bis ca. 1000 km) oder Hoch (bis ca. 800 km), erst
+            danach nach der Krümmung des Druckfelds. Angelehnt an die objektive Wetterlagenklassifikation des DWD, die
+            aber zusätzlich Höhendaten nutzt; die Einordnung hier ist eine Näherung.
           </p>
           <h3>Föhn</h3>
           <p>

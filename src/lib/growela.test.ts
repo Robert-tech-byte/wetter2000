@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { classify, fromPhrase, meaning, reasons, regionName, trend } from './growela';
 import type { PressureData } from './pressure';
+import real from './__fixtures__/pressure-2026-11-18.json';
 
 const lats = Array.from({ length: 16 }, (_, i) => 35 + i * 2.5);
 const lons = Array.from({ length: 29 }, (_, j) => -25 + j * 2.5);
@@ -66,5 +67,30 @@ describe('growela', () => {
     expect(r.map((x) => x.title)).toEqual(['Woher kommt die Luft?', 'Steigt oder sinkt die Luft?', 'Was kommt?', 'Wie windig?', 'Warum Föhn?']);
     expect(r[0].text).toMatch(/^Die Strömung führt Luft (vom|von der|von den|aus) /);
     expect(r[2].text).toMatch(/fällt der Luftdruck über München um etwa 10 hPa/);
+  });
+
+  it('real ECMWF data 18.11.2026: flank of a deep low counts as cyclonic, no fog text', () => {
+    const d = real as unknown as PressureData;
+    const g = classify(d, '2026-11-18')!;
+    expect(g.pCenter).toBeLessThan(1000);
+    expect(g.cyclonic).toBe(true);
+    expect(g.name).toBe('Westlage, zyklonal');
+    expect(g.gradient).toBeGreaterThan(12);
+    const text = [...meaning(g, false), ...reasons([g, classify(d, '2026-11-19')!], false).map((r) => r.text)].join(' ');
+    expect(text).not.toMatch(/Nebel|Hochnebel|Inversion/);
+    expect(text).toMatch(/stürmisch/);
+  });
+
+  it('real ECMWF data 21.11.2026: high pressure counts as anticyclonic', () => {
+    const g = classify(real as unknown as PressureData, '2026-11-21')!;
+    expect(g.pCenter).toBeGreaterThanOrEqual(1020);
+    expect(g.cyclonic).toBe(false);
+  });
+
+  it('trend compares the visible name: 18.11. → 19.11. stays "Westlage, zyklonal"', () => {
+    const d = real as unknown as PressureData;
+    const list = ['2026-11-18', '2026-11-19', '2026-11-20'].map((x) => classify(d, x)!);
+    expect(list[1].name).toBe('Westlage, zyklonal');
+    expect(trend(list)).toBe('Ab Freitag stellt sich die Wetterlage um: Nordwestlage, antizyklonal.');
   });
 });

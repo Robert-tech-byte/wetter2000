@@ -74,9 +74,8 @@ export function GrowelaPanel({ pressure, foehn }: Props) {
         <PressureMap data={pressure} date={g.date} />
       </Suspense>
       <p className="note">
-        Vereinfachte Einordnung aus dem ECMWF-Luftdruck: Anströmrichtung aus dem Druckgefälle über Süddeutschland,
-        „zyklonal“ wenn München tiefer liegt als die Umgebung. Angelehnt an die objektive Wetterlagenklassifikation des
-        DWD, aber nicht identisch.
+        Vereinfachte Einordnung aus dem ECMWF-Luftdruck am Boden. Echte Klassifikationen (z. B. DWD) nutzen zusätzlich
+        Höhendaten; Details unter „Quellen &amp; Methode“.
       </p>
     </div>
   );

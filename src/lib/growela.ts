@@ -18,6 +18,11 @@ export interface Growela {
   gradient: number;
   /** Sea-level pressure over Munich at 12:00 (hPa). */
   pCenter: number;
+  /** Nearest low / high (distance in km). */
+  nearLow: { label: string; value: number; km: number } | null;
+  nearHigh: { label: string; value: number; km: number } | null;
+  /** Why the type counts as cyclonic or anticyclonic (plain language). */
+  basis: string;
   name: string;
   highs: { label: string; value: number }[];
   lows: { label: string; value: number }[];
@@ -90,6 +95,28 @@ function at(data: PressureData, grid: (number | null)[][], lat: number, lon: num
 }
 
 const KM_PER_DEG = 111.32;
+/** Thresholds for cyclonic / anticyclonic (see classify). */
+export const LOW_PRESSURE = 1005;
+export const HIGH_PRESSURE = 1020;
+export const LOW_RADIUS_KM = 1000;
+export const HIGH_RADIUS_KM = 800;
+/** Gradient above which the weather counts as windy (hPa / 1000 km). */
+export const WINDY_GRADIENT = 12;
+
+const roundKm = (km: number) => Math.round(km / 50) * 50;
+const COMPASS8 = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'] as const;
+const compass8 = (deg: number) => COMPASS8[Math.round(deg / 45) % 8];
+/** Plain direction for the name; the 4-sector scheme still drives the rules. */
+const PLAIN: Record<(typeof COMPASS8)[number], string> = {
+  N: 'Nord',
+  NO: 'Nordost',
+  O: 'Ost',
+  SO: 'Südost',
+  S: 'Süd',
+  SW: 'Südwest',
+  W: 'West',
+  NW: 'Nordwest',
+};
 /** Gradient below this (hPa / 1000 km) counts as "no clear inflow". */
 export const WEAK_GRADIENT = 4;
 
@@ -116,11 +143,41 @@ export function classify(data: PressureData, date: string): Growela | null {
   const fromDeg = gradient < WEAK_GRADIENT ? null : (Math.atan2(-u, -v) * 180) / Math.PI + 360;
   const from = fromDeg == null ? null : fromDeg % 360;
   const sector: Sector = from == null ? 'XX' : from < 90 ? 'NO' : from < 180 ? 'SO' : from < 270 ? 'SW' : 'NW';
-  // Curvature: centre below the mean of its neighbours → cyclonic.
-  const cyclonic = pC! < (pN! + pS! + pE! + pW!) / 4;
-
   const marks = extrema(day.p, data.lats, data.lons);
   const near = (m: Extremum) => Math.hypot(m.lat - lat, (m.lon - lon) * Math.cos((lat * Math.PI) / 180));
+  const nearest = (kind: 'H' | 'T') => {
+    const m = marks.filter((x) => x.kind === kind).sort((a, b) => near(a) - near(b))[0];
+    return m ? { label: regionName(m.lat, m.lon), value: Math.round(m.value), km: Math.round(near(m) * KM_PER_DEG) } : null;
+  };
+  const nearLow = nearest('T');
+  const nearHigh = nearest('H');
+
+  // Cyclonic or anticyclonic. The local curvature alone misleads on the flank of a deep
+  // low (a very low northern neighbour makes Munich look "higher" than its surroundings),
+  // so pressure level and the nearest systems decide first, curvature only in between.
+  const curvature = (pN! + pS! + pE! + pW!) / 4 - pC!; // > 0: centre lower → cyclonic
+  const lowClose = nearLow != null && nearLow.km <= LOW_RADIUS_KM && (nearHigh == null || nearLow.km < nearHigh.km);
+  const highClose = nearHigh != null && nearHigh.km <= HIGH_RADIUS_KM && (nearLow == null || nearHigh.km < nearLow.km);
+  let cyclonic: boolean;
+  let basis: string;
+  if (pC! <= LOW_PRESSURE) {
+    cyclonic = true;
+    basis = `Der Luftdruck über München ist mit ${Math.round(pC!)} hPa niedrig.`;
+  } else if (pC! >= HIGH_PRESSURE) {
+    cyclonic = false;
+    basis = `Der Luftdruck über München ist mit ${Math.round(pC!)} hPa hoch.`;
+  } else if (lowClose) {
+    cyclonic = true;
+    basis = `Ein Tief über ${nearLow!.label} liegt nur rund ${roundKm(nearLow!.km)} km entfernt.`;
+  } else if (highClose) {
+    cyclonic = false;
+    basis = `Ein Hoch über ${nearHigh!.label} liegt nur rund ${roundKm(nearHigh!.km)} km entfernt.`;
+  } else {
+    cyclonic = curvature > 0;
+    basis = cyclonic
+      ? 'Der Luftdruck über München ist etwas niedriger als ringsum.'
+      : 'Der Luftdruck über München ist etwas höher als ringsum.';
+  }
   const describe = (kind: 'H' | 'T') =>
     marks
       .filter((m) => m.kind === kind)
@@ -135,7 +192,10 @@ export function classify(data: PressureData, date: string): Growela | null {
     fromDeg: from,
     gradient,
     pCenter: pC!,
-    name: `${SECTOR_NAME[sector]}, ${cyclonic ? 'zyklonal' : 'antizyklonal'}`,
+    nearLow,
+    nearHigh,
+    basis,
+    name: `${from == null ? SECTOR_NAME.XX : `${PLAIN[compass8(from)]}lage`}, ${cyclonic ? 'zyklonal' : 'antizyklonal'}`,
     highs: describe('H'),
     lows: describe('T'),
   };
@@ -144,6 +204,14 @@ export function classify(data: PressureData, date: string): Growela | null {
 const WINTER = (date: string) => {
   const m = Number(date.slice(5, 7));
   return m >= 10 || m <= 3;
+};
+
+const FROM_PLAIN: Record<Sector, string> = {
+  NO: 'Nordost',
+  SO: 'Südost',
+  SW: 'Südwest',
+  NW: 'Nordwest',
+  XX: 'wechselnder Richtung',
 };
 
 /** Plain-language consequences for Munich. */
@@ -165,7 +233,16 @@ export function meaning(g: Growela, foehn: boolean): string[] {
       : 'Hochdruck, schwacher Wind: viel Sonne, nachmittags einzelne Wärmegewitter möglich.',
     XXz: 'Flaches Tief, schwacher Wind: unbeständig, Schauer und Gewitter möglich.',
   };
-  out.push(rules[key]);
+  const windy = g.gradient >= WINDY_GRADIENT;
+  // Calm-weather texts (fog, inversion, "meist trocken") don't fit a strong gradient.
+  if (windy && !g.cyclonic) {
+    out.push(
+      `Kräftige Strömung aus ${FROM_PLAIN[g.sector]} am Rand eines Tiefs: windig, wechselnd bewölkt, zeitweise Schauer möglich.`,
+    );
+  } else {
+    out.push(rules[key]);
+  }
+  if (windy) out.push('Lebhafter bis stürmischer Wind, vor allem in Böen.');
   if (foehn) out.push('Heute ist Föhn wahrscheinlich: warm und trocken, Alpenblick bis zur Zugspitze.');
   return out;
 }
@@ -176,7 +253,8 @@ const DAY = new Intl.DateTimeFormat('de-DE', { weekday: 'long', timeZone: 'UTC' 
 export function trend(list: Growela[]): string | null {
   if (list.length < 2) return null;
   const today = list[0];
-  const change = list.slice(1).find((g) => g.sector !== today.sector || g.cyclonic !== today.cyclonic);
+  // Compare what the reader sees (the name), not the internal 4-sector scheme.
+  const change = list.slice(1).find((g) => g.name !== today.name);
   if (!change) return `Die Lage bleibt in den nächsten ${list.length - 1} Tagen weitgehend gleich.`;
   const wd = DAY.format(new Date(`${change.date}T00:00:00Z`));
   return `Ab ${wd} stellt sich die Wetterlage um: ${change.name}.`;
@@ -240,18 +318,20 @@ export function reasons(list: Growela[], foehn: boolean): Reason[] {
     });
   }
 
-  // 2. Rising or sinking air
+  // 2. Rising or sinking air – based on the same basis as the classification
+  const windy = g.gradient >= WINDY_GRADIENT;
   out.push(
     g.cyclonic
       ? {
           title: 'Steigt oder sinkt die Luft?',
-          text: 'Der Luftdruck über München ist niedriger als ringsum (zyklonal). Die Luft wird dadurch zum Aufsteigen gezwungen, kühlt dabei ab, und ihre Feuchtigkeit kondensiert zu Wolken. Deshalb ist es eher bewölkt, Niederschlag ist wahrscheinlicher.',
+          text: `${g.basis} Im Bereich eines Tiefs steigt die Luft auf, kühlt dabei ab, und ihre Feuchtigkeit kondensiert zu Wolken. Deshalb ist es eher bewölkt, und Niederschlag ist wahrscheinlicher (zyklonal).`,
         }
       : {
           title: 'Steigt oder sinkt die Luft?',
-          text: winter
-            ? 'Der Luftdruck über München ist höher als ringsum (antizyklonal). Die Luft sinkt ab und erwärmt sich dabei, Wolken lösen sich auf. Im Winterhalbjahr bleibt kalte Luft am Boden liegen, darüber liegt wärmere (Inversion). Das begünstigt Nebel und Hochnebel, während es in den Bergen oft sonnig ist.'
-            : 'Der Luftdruck über München ist höher als ringsum (antizyklonal). Die Luft sinkt ab und erwärmt sich dabei, Wolken lösen sich auf. Deshalb ist es eher sonnig und trocken.',
+          text:
+            winter && !windy && g.pCenter >= 1015
+              ? `${g.basis} Unter Hochdruckeinfluss sinkt die Luft ab und erwärmt sich, Wolken lösen sich auf (antizyklonal). Im Winterhalbjahr bleibt dabei kalte Luft am Boden liegen, darüber liegt wärmere (Inversion). Das begünstigt Nebel und Hochnebel, während es in den Bergen oft sonnig ist.`
+              : `${g.basis} Unter Hochdruckeinfluss sinkt die Luft ab und erwärmt sich, Wolken lösen sich eher auf (antizyklonal).${windy ? ' Wegen des kräftigen Druckgefälles bleibt es trotzdem windig.' : ''}`,
         },
   );
 
