@@ -5,3 +5,4 @@ dist
 *.tsbuildinfo
 public/pressure.json
 __pycache__/
+public/trend.json

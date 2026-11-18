@@ -248,6 +248,7 @@ export function Days({ ecmwf, hires, eps, pressure, foehn }: Props) {
         return (
           <DayRow
             key={x.date}
+            id={`day-${x.date}`}
             name={relativeDayName(x.date, today)}
             date={k < AGREEMENT_DAYS ? '' : formatDayShort(x.date).split(' ')[1]}
             badge={f ? <span className="foehn" title="Föhn wahrscheinlich">Föhn</span> : null}

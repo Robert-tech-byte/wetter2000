@@ -8,6 +8,8 @@ import { Hourly } from './components/Hourly';
 import { Now } from './components/Now';
 import { Radar } from './components/Radar';
 import { usePressure } from './lib/usePressure';
+import { useTrend } from './lib/useTrend';
+import { Trend14 } from './components/Trend14';
 import { useRadar } from './lib/useRadar';
 import { useWeather } from './lib/useWeather';
 
@@ -15,6 +17,7 @@ export default function App() {
   const w = useWeather();
   const radar = useRadar();
   const pressure = usePressure();
+  const trend = useTrend();
   const [route, setRoute] = useState<Km[] | null>(null);
   const errors = [
     w.ecmwf.error && 'Vorhersage',
@@ -56,6 +59,8 @@ export default function App() {
       />
 
       <Radar data={radar.data} error={radar.error} route={route} />
+
+      <Trend14 data={trend} />
 
       {errors.length > 0 && (
         <p className="error" role="alert">

@@ -45,6 +45,13 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             danach nach der Krümmung des Druckfelds. Angelehnt an die objektive Wetterlagenklassifikation des DWD, die
             aber zusätzlich Höhendaten nutzt; die Einordnung hier ist eine Näherung.
           </p>
+          <h3>14-Tage-Trend</h3>
+          <p>
+            ECMWF-Ensemble (Kontrolllauf und 50 Varianten, 0,25°) über Open-Meteo, alle 6 Stunden neu geladen. Je Tag
+            werden Höchst- und Tiefstwert jedes Laufs bestimmt. Punkt und Zahl: Median. Kräftiger Strich: mittlere 50 %
+            der Läufe (wahrscheinlich), feiner Strich: mittlere 80 % (möglich). Regen: Füllung = Median der Tagessumme,
+            Rahmen = 90. Perzentil, Zahl darunter = Anteil der Läufe mit mindestens 0,1 mm.
+          </p>
           <h3>Föhn</h3>
           <p>
             „Föhn“ erscheint an einem Tag, wenn laut ECMWF-Modell tagsüber mindestens 2 Stunden lang gleichzeitig gilt:

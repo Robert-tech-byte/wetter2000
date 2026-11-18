@@ -35,11 +35,12 @@ interface Props {
   trailing: ReactNode;
   children: ReactNode;
   open?: boolean;
+  id?: string;
 }
 
-export function DayRow({ name, date, cond, lo, hi, scale, rain, badge, trailing, children, open }: Props) {
+export function DayRow({ name, date, cond, lo, hi, scale, rain, badge, trailing, children, open, id }: Props) {
   return (
-    <details className="row" open={open}>
+    <details className="row" open={open} id={id}>
       <summary>
         <span className="row-name">
           {name}

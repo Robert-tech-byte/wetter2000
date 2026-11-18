@@ -32,6 +32,10 @@ jobs:
         timeout-minutes: 6
         continue-on-error: true
         run: python3 scripts/build-pressure.py || echo "::warning::Luftdruckdaten nicht verfügbar – Karte wird ausgeblendet"
+      - name: Load 14-day trend data
+        timeout-minutes: 5
+        continue-on-error: true
+        run: python3 scripts/build-trend.py || echo "::warning::Trenddaten nicht verfügbar – Trend wird ausgeblendet"
       - name: Check Föhn variables (log only)
         continue-on-error: true
         timeout-minutes: 2

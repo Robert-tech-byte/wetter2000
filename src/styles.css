@@ -1405,3 +1405,135 @@ table.mini small {
   color: var(--low);
   font-weight: 600;
 }
+
+/* 14-Tage-Trend (Rams-reduziert) */
+:root {
+  --t-max: #d9531e;
+  --t-min: #3d6a8c;
+  --t-rain: #5d7f99;
+  --t-zero: #a9a69c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --t-max: #f0743f;
+    --t-min: #7fa6c4;
+    --t-rain: #8aa6bd;
+    --t-zero: #5c5b55;
+  }
+}
+:root[data-theme='dark'] {
+  --t-max: #f0743f;
+  --t-min: #7fa6c4;
+  --t-rain: #8aa6bd;
+  --t-zero: #5c5b55;
+}
+.trend14 {
+  display: grid;
+  gap: 6px;
+}
+.t-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.t-unit {
+  font: 400 0.68rem var(--font-mono);
+  color: var(--muted);
+}
+.t-sum {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.t-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.t-chart text {
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+.t-grid {
+  stroke: var(--line);
+  stroke-width: 0.6;
+}
+.t-zero {
+  stroke: var(--t-zero);
+  stroke-width: 0.8;
+}
+.t-axis,
+.t-pct,
+.t-day {
+  fill: var(--muted);
+}
+.t-day.strong {
+  fill: var(--fg);
+  font-weight: 600;
+}
+.t-poss {
+  stroke-width: 0.8;
+  opacity: 0.55;
+}
+.t-likely {
+  stroke-width: 3;
+  stroke-linecap: butt;
+}
+.t-max line {
+  stroke: var(--t-max);
+}
+.t-min line {
+  stroke: var(--t-min);
+}
+.t-dot {
+  stroke: var(--bg);
+  stroke-width: 1.2;
+}
+.t-max .t-dot {
+  fill: var(--t-max);
+}
+.t-min .t-dot {
+  fill: var(--t-min);
+}
+.t-chart .t-val {
+  font-family: var(--font-body);
+  font-weight: 500;
+  fill: var(--fg);
+}
+.t-rain {
+  fill: var(--t-rain);
+}
+.t-rain-poss {
+  fill: none;
+  stroke: var(--t-rain);
+  stroke-width: 0.7;
+}
+.t-hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+.t-hit:focus-visible {
+  fill: color-mix(in srgb, var(--link) 12%, transparent);
+}
+.t-legend {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.t-legend b {
+  font-weight: 400;
+}
+.t-max-c {
+  color: var(--t-max);
+}
+.t-min-c {
+  color: var(--t-min);
+}
+.t-rain-c {
+  color: var(--t-rain);
+}

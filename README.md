@@ -14,6 +14,7 @@ Eine Spalte, drei Ebenen: Auf einen Blick steht die Antwort, Antippen zeigt die 
 - **Grundkarte:** eigene Vektorkarte ohne Kartenkacheln: Stadtgrenze, Stadtteile, Hauptstraßen, Autobahnen, Isar, Seen, Orte, Entfernungsringe.
 - **GroWeLa:** Knopf über „Mehr zu jetzt“, erklärt die Großwetterlage und das Warum (Herkunft der Luft, auf- oder absinkende Luft, Drucktendenz, Wind, Föhn-Mechanismus; Anströmrichtung, zyklonal/antizyklonal, Lage von Hoch und Tief, Bedeutung für München, Trend 3 Tage) aus dem ECMWF-Luftdruck.
 - **Föhn:** Kennzeichen an Tagen, an denen laut ECMWF Föhn wahrscheinlich ist (Druck Bozen − München ≥ 4 hPa, Höhenwind S–SW, Luftfeuchte < 55 %).
+- **14-Tage-Trend:** unter dem Radar, ab morgen, ECMWF-Ensemble (51 Läufe): Höchst-/Tiefstwert als Median mit Zahl, kräftiger Strich = wahrscheinlich (25–75 %), feiner = möglich (10–90 %); Regenmenge (Median gefüllt, 90 % als Rahmen) und Regenwahrscheinlichkeit; ein Satz fasst den Trend zusammen. Antippen öffnet den Tag unten.
 - **Tage:** 15 Tage als Liste mit Regen-Spalte (Wahrscheinlichkeit und Menge der Modelle für 3 Tage, danach ECMWF-Menge). Antippen zeigt den stündlichen Verlauf von Temperatur und Regen; für heute bis übermorgen darunter, wie sicher Temperatur und Regen sind (7 Modelle ≤ 7 km). „Details“ für Power-User: Luftdruckkarte Europa um 12 Uhr (Isobaren, Hochs/Tiefs), Böen, Sonne, Modellspannen, Einzelmodelle, ICON-D2-EPS.
 
 Parameter (Toleranz, Schwellen, Modellliste) stehen in [`src/lib/config.ts`](src/lib/config.ts).
@@ -32,6 +33,10 @@ Eigene flache, farbige SVG-Icons (`src/components/Icon.tsx`): gelbe Sonne, graue
 ## Luftdruckkarte
 
 `public/pressure.json` wird im Veröffentlichungs-Workflow alle 6 Stunden von [`scripts/build-pressure.py`](scripts/build-pressure.py) erzeugt: ECMWF-Luftdruck auf Meereshöhe (Open-Meteo) im 2,5°-Raster über Europa, je Tag um 12 Uhr. Isobaren (5 hPa) und Hochs/Tiefs berechnet die App. Ländergrenzen: Natural Earth 1:50m (gemeinfrei), `src/data/europe.json`. Wetterfronten werden nicht dargestellt.
+
+## Trenddaten
+
+`public/trend.json` erzeugt [`scripts/build-trend.py`](scripts/build-trend.py) im Veröffentlichungs-Workflow alle 6 Stunden aus dem ECMWF-Ensemble (Open-Meteo Ensemble-API, `ecmwf_ifs025`). Schlägt der Abruf fehl, bleibt die zuletzt veröffentlichte Datei erhalten.
 
 ## Kartendaten
 
