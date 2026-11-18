@@ -13,12 +13,15 @@ import {
   type DirectionId,
   type Duration,
   type Option,
+  type Slot,
   type Trip,
+  windEffect,
 } from '../lib/commute';
 import { fmt1 } from '../lib/format';
 import { fromKm, type Km } from '../lib/geo';
 import type { RadarData } from '../lib/radar';
 import { clock } from '../lib/time';
+import { WeatherIcon } from './Icon';
 
 /** Settings used to be stored on the device; remove them once so nobody inherits someone else's choice. */
 function forgetOldSettings() {
@@ -47,7 +50,7 @@ export function Commute({ radar, onRoute }: Props) {
   const [editing, setEditing] = useState(false);
   const [trip, setTrip] = useState<Trip>(() => (new Date().getHours() < 12 ? 'hin' : 'heim'));
   const [choice, setChoice] = useState<Choice>(EMPTY);
-  const [slots, setSlots] = useState<{ start: Date; mm15: number }[] | null>(null);
+  const [slots, setSlots] = useState<Slot[] | null>(null);
   const [now, setNow] = useState(() => new Date());
 
   const workplace = WORKPLACES.find((w) => w.id === choice.work) ?? null;
@@ -73,6 +76,9 @@ export function Commute({ radar, onRoute }: Props) {
             // Local Munich time without offset → interpret via the radar-independent clock.
             start: localToDate(t),
             mm15: d.minutely_15.precipitation[i] ?? 0,
+            wind: d.minutely_15.wind_speed_10m?.[i] ?? null,
+            windDir: d.minutely_15.wind_direction_10m?.[i] ?? null,
+            gust: d.minutely_15.wind_gusts_10m?.[i] ?? null,
           })),
         );
       })
@@ -94,6 +100,10 @@ export function Commute({ radar, onRoute }: Props) {
   const first = options[0] ?? null;
   const pick = best(radarOnly) ?? best(options);
   const pickAll = best(options);
+
+  // Wind for the departure the verdict talks about (now, or the suggested later one).
+  const windDep = first && !isDry(first) && pick && pick.depart > 0 ? pick : first;
+  const wind = slots && route && windDep && choice.duration ? windEffect(slots, route, windDep.departAt, choice.duration) : null;
 
   const update = (v: Partial<Choice>) => setChoice((s) => ({ ...s, ...v }));
 
@@ -215,6 +225,23 @@ export function Commute({ radar, onRoute }: Props) {
                   <>Später wird es nicht besser.</>
                 )}
               </p>
+              {wind && (
+                <p className={`wind-line ${wind.kind}`}>
+                  <WeatherIcon name="wind" className="wind-ic" />
+                  <span>
+                    <span className="wind-main">{wind.label}</span>
+                    {wind.gust != null && wind.gust >= 25 && (
+                      <span className={wind.gust >= 40 ? 'wind-gust strong' : 'wind-gust'}>
+                        , Böen bis {Math.round(wind.gust)} km/h
+                      </span>
+                    )}
+                    {(wind.kind === 'head' || wind.kind === 'tail') && wind.deltaMin !== 0
+                      ? ` · ca. ${wind.deltaMin > 0 ? '+' : '−'}${Math.abs(wind.deltaMin)} min (grob)`
+                      : ''}
+                    {windDep !== first ? ` · bei Abfahrt ${clock(windDep.departAt)}` : ''}
+                  </span>
+                </p>
+              )}
               <ol className="departures" aria-label="Abfahrtszeiten">
                 {options.map((o) => (
                   <li

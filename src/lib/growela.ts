@@ -16,6 +16,8 @@ export interface Growela {
   fromDeg: number | null;
   /** Pressure gradient strength (hPa per 1000 km). */
   gradient: number;
+  /** Sea-level pressure over Munich at 12:00 (hPa). */
+  pCenter: number;
   name: string;
   highs: { label: string; value: number }[];
   lows: { label: string; value: number }[];
@@ -50,6 +52,13 @@ const REGIONS: [string, number, number][] = [
   ['dem östlichen Mittelmeer', 36, 24],
   ['Westrussland', 55, 38],
   ['dem Schwarzen Meer', 43.5, 34],
+  ['Nordafrika', 31, 5],
+  ['dem Atlantik vor Portugal', 40, -16],
+  ['dem Europäischen Nordmeer', 68, 0],
+  ['der Arktis', 76, 20],
+  ['Russland', 58, 48],
+  ['der Ukraine', 49, 32],
+  ['der Türkei', 39, 33],
 ];
 
 export function regionName(lat: number, lon: number): string {
@@ -125,6 +134,7 @@ export function classify(data: PressureData, date: string): Growela | null {
     cyclonic,
     fromDeg: from,
     gradient,
+    pCenter: pC!,
     name: `${SECTOR_NAME[sector]}, ${cyclonic ? 'zyklonal' : 'antizyklonal'}`,
     highs: describe('H'),
     lows: describe('T'),
@@ -170,4 +180,115 @@ export function trend(list: Growela[]): string | null {
   if (!change) return `Die Lage bleibt in den nächsten ${list.length - 1} Tagen weitgehend gleich.`;
   const wd = DAY.format(new Date(`${change.date}T00:00:00Z`));
   return `Ab ${wd} stellt sich die Wetterlage um: ${change.name}.`;
+}
+
+export interface Reason {
+  title: string;
+  text: string;
+}
+
+/** "dem westlichen Mittelmeer" → "vom westlichen Mittelmeer", "Island" → "aus Island". */
+export function fromPhrase(region: string): string {
+  if (region.startsWith('dem ')) return `vom ${region.slice(4)}`;
+  if (region.startsWith('den ')) return `von den ${region.slice(4)}`;
+  if (region.startsWith('der ')) return `von der ${region.slice(4)}`;
+  return `aus ${region}`;
+}
+
+/** Point `km` upstream of Munich along the inflow direction. */
+function upstream(fromDeg: number, km: number): [number, number] {
+  const rad = (fromDeg * Math.PI) / 180;
+  const lat = LOCATION.lat + (Math.cos(rad) * km) / KM_PER_DEG;
+  const lon = LOCATION.lon + (Math.sin(rad) * km) / (KM_PER_DEG * Math.cos((LOCATION.lat * Math.PI) / 180));
+  return [lat, lon];
+}
+
+const AIR: Record<Exclude<Sector, 'XX'>, (winter: boolean) => string> = {
+  SW: () => 'Diese Luft stammt aus südlichen Breiten und ist deshalb vergleichsweise warm, über dem Meer hat sie Feuchtigkeit aufgenommen.',
+  NW: () => 'Diese Luft kommt über den Atlantik aus nördlichen Breiten: kühl und feucht, oft mit Schauern.',
+  NO: (w) =>
+    w
+      ? 'Diese Luft hat lange über dem Festland gelegen: trocken und im Winterhalbjahr kalt.'
+      : 'Diese Luft hat lange über dem Festland gelegen: trocken, im Sommer warm.',
+  SO: (w) =>
+    w
+      ? 'Diese Luft kommt über Osteuropa: trocken, im Winterhalbjahr kalt.'
+      : 'Diese Luft kommt über Osteuropa und den Balkan: trocken und warm.',
+};
+
+/**
+ * Cause-and-effect explanation: where the air comes from, rising or sinking air,
+ * what is coming (pressure tendency), how windy, and the Föhn mechanism.
+ */
+export function reasons(list: Growela[], foehn: boolean): Reason[] {
+  const g = list[0];
+  if (!g) return [];
+  const winter = WINTER(g.date);
+  const out: Reason[] = [];
+
+  // 1. Origin of the air
+  if (g.fromDeg == null || g.sector === 'XX') {
+    out.push({
+      title: 'Woher kommt die Luft?',
+      text: 'Es gibt kaum Druckgefälle, deshalb bewegt sich die Luft kaum. Sie bleibt über der Region und nimmt deren Eigenschaften an: Nachts kühlt sie aus, tagsüber erwärmt sie sich in der Sonne.',
+    });
+  } else {
+    const [la, lo] = upstream(g.fromDeg, 1300);
+    out.push({
+      title: 'Woher kommt die Luft?',
+      text: `Die Strömung führt Luft ${fromPhrase(regionName(la, lo))} heran. ${AIR[g.sector](winter)}`,
+    });
+  }
+
+  // 2. Rising or sinking air
+  out.push(
+    g.cyclonic
+      ? {
+          title: 'Steigt oder sinkt die Luft?',
+          text: 'Der Luftdruck über München ist niedriger als ringsum (zyklonal). Die Luft wird dadurch zum Aufsteigen gezwungen, kühlt dabei ab, und ihre Feuchtigkeit kondensiert zu Wolken. Deshalb ist es eher bewölkt, Niederschlag ist wahrscheinlicher.',
+        }
+      : {
+          title: 'Steigt oder sinkt die Luft?',
+          text: winter
+            ? 'Der Luftdruck über München ist höher als ringsum (antizyklonal). Die Luft sinkt ab und erwärmt sich dabei, Wolken lösen sich auf. Im Winterhalbjahr bleibt kalte Luft am Boden liegen, darüber liegt wärmere (Inversion). Das begünstigt Nebel und Hochnebel, während es in den Bergen oft sonnig ist.'
+            : 'Der Luftdruck über München ist höher als ringsum (antizyklonal). Die Luft sinkt ab und erwärmt sich dabei, Wolken lösen sich auf. Deshalb ist es eher sonnig und trocken.',
+        },
+  );
+
+  // 3. What is coming: pressure tendency until tomorrow noon
+  if (list[1]) {
+    const dp = list[1].pCenter - g.pCenter;
+    const v = Math.abs(Math.round(dp));
+    out.push({
+      title: 'Was kommt?',
+      text:
+        dp <= -4
+          ? `Bis morgen Mittag fällt der Luftdruck über München um etwa ${v} hPa. Ein Tief oder eine Front nähert sich, das Wetter wird unbeständiger.`
+          : dp >= 4
+            ? `Bis morgen Mittag steigt der Luftdruck über München um etwa ${v} hPa. Hochdruck setzt sich durch, das Wetter beruhigt sich.`
+            : 'Der Luftdruck bleibt bis morgen Mittag etwa gleich. Eine große Umstellung ist vorerst nicht in Sicht.',
+    });
+  }
+
+  // 4. Wind from the gradient (≈10 hPa / 1000 km ≈ 35 km/h geostrophic wind at this latitude)
+  out.push({
+    title: 'Wie windig?',
+    text:
+      g.gradient < 4
+        ? 'Das Druckgefälle ist gering, der Wind schwach.'
+        : g.gradient < 10
+          ? 'Das Druckgefälle ist mäßig, der Wind schwach bis mäßig.'
+          : g.gradient < 18
+            ? 'Das Druckgefälle ist kräftig: lebhafter Wind mit Böen.'
+            : 'Das Druckgefälle ist sehr stark: stürmischer Wind möglich.',
+  });
+
+  // 5. Föhn mechanism
+  if (foehn) {
+    out.push({
+      title: 'Warum Föhn?',
+      text: 'Südliche Luft wird an den Alpen zum Aufsteigen gezwungen, regnet sich auf der Südseite ab und verliert ihre Feuchtigkeit. Auf der Nordseite sinkt sie ab und erwärmt sich dabei stärker, als sie sich beim Aufsteigen abgekühlt hat. In München kommt sie deshalb warm und sehr trocken an, mit klarer Fernsicht auf die Berge.',
+    });
+  }
+  return out;
 }

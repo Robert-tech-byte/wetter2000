@@ -1354,3 +1354,54 @@ table.mini small {
   gap: 4px;
   font-size: 0.92rem;
 }
+
+.gw-sub {
+  margin: 4px 0 0;
+  font: 600 0.78rem var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-text);
+}
+.gw-why {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.gw-why dt {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.gw-why dd {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+/* --- Wind auf der Strecke --- */
+.wind-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.wind-ic {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+.wind-line.head .wind-main {
+  font-weight: 600;
+}
+.wind-line.tail .wind-main {
+  color: var(--good);
+  font-weight: 600;
+}
+.wind-line.calm .wind-main {
+  color: var(--muted);
+}
+.wind-gust.strong {
+  color: var(--low);
+  font-weight: 600;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { best, isDry, modelOptions, radarOptions, route } from './commute';
+import { best, heading, isDry, modelOptions, radarOptions, route, windEffect } from './commute';
 import type { RadarData } from './radar';
 
 /** 40×40 km grid around 0, 1 km cells; rain function decides per frame and cell. */
@@ -72,5 +72,24 @@ describe('commute', () => {
     expect(opts.map((o) => o.depart)).toEqual([0, 5, 10, 15, 20]);
     const [home] = route([0, 0], 'S', 40, 'hin');
     expect(home[1]).toBeCloseTo(-40 / 3); // 13,3 km at 20 km/h
+  });
+
+  it('wind: heading and head/tail/cross components', () => {
+    const north = route([0, 0], 'S', 20, 'hin'); // home in the south → riding north
+    expect(Math.round(heading(north))).toBe(0);
+    const slots = (dir: number, wind = 20, gust = 45) =>
+      Array.from({ length: 8 }, (_, i) => ({ start: new Date(now.getTime() + i * 900000), mm15: 0, wind, windDir: dir, gust }));
+    const head = windEffect(slots(0), north, now, 20)!;
+    expect(head.kind).toBe('head');
+    expect(Math.round(head.head)).toBe(20);
+    expect(head.label).toMatch(/Gegenwind 20 km\/h, deutlich spürbar/);
+    expect(head.deltaMin).toBeGreaterThan(0);
+    expect(head.gust).toBe(45);
+    const tail = windEffect(slots(180), north, now, 20)!;
+    expect(tail.kind).toBe('tail');
+    expect(tail.deltaMin).toBeLessThan(0);
+    expect(windEffect(slots(90), north, now, 20)!.kind).toBe('cross');
+    expect(windEffect(slots(90, 5), north, now, 20)!.kind).toBe('calm');
+    expect(windEffect([], north, now, 20)).toBeNull();
   });
 });

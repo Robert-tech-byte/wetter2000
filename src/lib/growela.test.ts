@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classify, meaning, regionName, trend } from './growela';
+import { classify, fromPhrase, meaning, reasons, regionName, trend } from './growela';
 import type { PressureData } from './pressure';
 
 const lats = Array.from({ length: 16 }, (_, i) => 35 + i * 2.5);
@@ -47,8 +47,24 @@ describe('growela', () => {
     expect(trend(list)).toMatch(/^Ab Donnerstag/);
   });
 
+  it('from-phrases', () => {
+    expect(fromPhrase('dem westlichen Mittelmeer')).toBe('vom westlichen Mittelmeer');
+    expect(fromPhrase('den Britischen Inseln')).toBe('von den Britischen Inseln');
+    expect(fromPhrase('der Biskaya')).toBe('von der Biskaya');
+    expect(fromPhrase('Island')).toBe('aus Island');
+  });
+
   it('region names', () => {
     expect(regionName(64, -18)).toBe('Island');
     expect(regionName(47.2, 19)).toBe('Ungarn');
+  });
+
+  it('reasons: origin, rising air, tendency, wind, föhn', () => {
+    const d = data([(_la, lo) => 1010 + lo * 0.6, (_la, lo) => 1000 + lo * 0.6]);
+    const list = ['2026-11-17', '2026-11-18'].map((x) => classify(d, x)!);
+    const r = reasons(list, true);
+    expect(r.map((x) => x.title)).toEqual(['Woher kommt die Luft?', 'Steigt oder sinkt die Luft?', 'Was kommt?', 'Wie windig?', 'Warum Föhn?']);
+    expect(r[0].text).toMatch(/^Die Strömung führt Luft (vom|von der|von den|aus) /);
+    expect(r[2].text).toMatch(/fällt der Luftdruck über München um etwa 10 hPa/);
   });
 });

@@ -35,7 +35,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             Arbeitsort: U-Bahn Schwanthalerhöhe oder Westfriedhof. Das Zuhause liegt in der gewählten Richtung,
             die Entfernung ergibt sich aus Fahrzeit und 20 km/h (gerade Linie). Für jede Minute der Fahrt wird der
             Regen an der Stelle gelesen, an der man dann ungefähr ist. Bis zum Ende des Nowcasts (ca. +60 min) mit
-            dem DWD-Radar in 5-Minuten-Schritten, danach mit ICON-D2 in 15-Minuten-Schritten (Streckenmitte, ungenauer). „Trocken“ heißt unter 0,05 mm auf der ganzen Fahrt. Es wird nichts gespeichert.
+            dem DWD-Radar in 5-Minuten-Schritten, danach mit ICON-D2 in 15-Minuten-Schritten (Streckenmitte, ungenauer). „Trocken“ heißt unter 0,05 mm auf der ganzen Fahrt. Wind: ICON-D2 in 15-Minuten-Schritten an der Streckenmitte, zerlegt in Gegen-, Rücken- und Seitenwind zur Fahrtrichtung; die Zeitangabe ist eine grobe Faustregel. Es wird nichts gespeichert.
           </p>
           <h3>GroWeLa (Großwetterlage)</h3>
           <p>

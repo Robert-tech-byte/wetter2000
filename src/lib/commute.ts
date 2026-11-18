@@ -49,6 +49,18 @@ export interface Option {
   source: 'radar' | 'modell';
 }
 
+/** 15-minute model slot (ICON-D2). */
+export interface Slot {
+  start: Date;
+  mm15: number;
+  /** km/h */
+  wind?: number | null;
+  /** degrees, direction the wind comes from */
+  windDir?: number | null;
+  /** km/h */
+  gust?: number | null;
+}
+
 export const isDry = (o: Pick<Option, 'mm' | 'peak'>) => o.mm < 0.05 && o.peak < RAIN_THRESHOLD;
 
 export function wetness(o: Pick<Option, 'mm' | 'peak'>): string {
@@ -93,7 +105,7 @@ export function radarOptions(data: RadarData, r: Km[], minutes: number, now: Dat
 
 /** Later departures from ICON-D2 15-minute sums at the route midpoint (less precise). */
 export function modelOptions(
-  slots: { start: Date; mm15: number }[],
+  slots: Slot[],
   minutes: number,
   now: Date,
   from: number,
@@ -129,4 +141,68 @@ export function best(options: Option[]): Option | null {
   if (!options.length) return null;
   const min = Math.min(...options.map((o) => o.mm));
   return options.find((o) => o.mm <= min + 0.02) ?? null;
+}
+
+export interface WindEffect {
+  kind: 'calm' | 'head' | 'tail' | 'cross';
+  /** Mean headwind component (km/h, negative = tailwind). */
+  head: number;
+  /** Mean crosswind component (km/h). */
+  cross: number;
+  /** Highest gust during the trip (km/h). */
+  gust: number | null;
+  /** Rough change of the trip duration (minutes, + = longer). */
+  deltaMin: number;
+  label: string;
+}
+
+/** Travel heading of the route (degrees, 0 = north). */
+export function heading(r: Km[]): number {
+  const [a, b] = [r[0], r[r.length - 1]];
+  return ((Math.atan2(b[0] - a[0], b[1] - a[1]) * 180) / Math.PI + 360) % 360;
+}
+
+/**
+ * Wind along the route during the trip: wind blowing from the travel direction is
+ * headwind. The duration estimate is a coarse rule of thumb (≈ 0.35 km/h slower per
+ * km/h headwind at 20 km/h), not a physical model.
+ */
+export function windEffect(slots: Slot[], r: Km[], departAt: Date, minutes: number): WindEffect | null {
+  const h = heading(r);
+  let head = 0;
+  let cross = 0;
+  let n = 0;
+  let gust: number | null = null;
+  for (let m = 0; m < minutes; m++) {
+    const t = departAt.getTime() + (m + 0.5) * 60000;
+    const s = slots.find((x) => t >= x.start.getTime() && t < x.start.getTime() + 900000);
+    if (!s || s.wind == null || s.windDir == null) continue;
+    const ang = ((s.windDir - h) * Math.PI) / 180;
+    head += s.wind * Math.cos(ang);
+    cross += Math.abs(s.wind * Math.sin(ang));
+    if (s.gust != null) gust = Math.max(gust ?? 0, s.gust);
+    n++;
+  }
+  if (!n) return null;
+  head /= n;
+  cross /= n;
+  const vEff = Math.min(28, Math.max(8, SPEED_KMH - 0.35 * head));
+  const deltaMin = Math.round(minutes * (SPEED_KMH / vEff) - minutes);
+  const r0 = (v: number) => Math.round(Math.abs(v));
+  let kind: WindEffect['kind'];
+  let label: string;
+  if (head >= 8) {
+    kind = 'head';
+    label = `Gegenwind ${r0(head)} km/h${head >= 15 ? ', deutlich spürbar' : ''}`;
+  } else if (head <= -8) {
+    kind = 'tail';
+    label = `Rückenwind ${r0(head)} km/h${head <= -10 ? ', hilft' : ''}`;
+  } else if (cross >= 15) {
+    kind = 'cross';
+    label = `Seitenwind ${r0(cross)} km/h`;
+  } else {
+    kind = 'calm';
+    label = 'Kaum Wind, kein Einfluss';
+  }
+  return { kind, head, cross, gust, deltaMin, label };
 }

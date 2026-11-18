@@ -182,7 +182,13 @@ export function fetchRadar(distanceMeters = 80000): Promise<RadarResponse> {
 // ---------- 15-minute model precipitation (ICON-D2) ----------
 
 export interface Minutely15 {
-  minutely_15: { time: string[]; precipitation: (number | null)[] };
+  minutely_15: {
+    time: string[];
+    precipitation: (number | null)[];
+    wind_speed_10m?: (number | null)[];
+    wind_direction_10m?: (number | null)[];
+    wind_gusts_10m?: (number | null)[];
+  };
 }
 
 /** ICON-D2 precipitation in 15-minute steps (mm per 15 min), local time keys. */
@@ -192,7 +198,7 @@ export function fetchMinutely15(lat: number, lon: number): Promise<Minutely15> {
     longitude: String(lon),
     timezone: LOCATION.timezone,
     models: 'icon_d2',
-    minutely_15: 'precipitation',
+    minutely_15: 'precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
     past_minutely_15: '1',
     forecast_minutely_15: '16',
   });

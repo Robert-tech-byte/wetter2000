@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo } from 'react';
 import type { FoehnSeries } from '../lib/api';
 import { analyzeFoehn } from '../lib/foehn';
-import { classify, meaning, trend } from '../lib/growela';
+import { classify, meaning, reasons, trend } from '../lib/growela';
 import { compass } from '../lib/hourly';
 import type { PressureData } from '../lib/pressure';
 import { localHourKey } from '../lib/time';
@@ -54,6 +54,16 @@ export function GrowelaPanel({ pressure, foehn }: Props) {
         {g.lows[0] && `Tief über ${g.lows[0].label} (${g.lows[0].value} hPa)`}
         {(g.highs[0] || g.lows[0]) && '.'}
       </p>
+      <h4 className="gw-sub">Warum ist das Wetter so?</h4>
+      <dl className="gw-why">
+        {reasons(list, foehnToday).map((r) => (
+          <div key={r.title}>
+            <dt>{r.title}</dt>
+            <dd>{r.text}</dd>
+          </div>
+        ))}
+      </dl>
+      <h4 className="gw-sub">Was heißt das für München?</h4>
       <ul className="gw-meaning">
         {meaning(g, foehnToday).map((m) => (
           <li key={m}>{m}</li>
