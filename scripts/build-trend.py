@@ -50,6 +50,23 @@ def fetch():
     raise RuntimeError(last)
 
 
+def fetch_det():
+    """Deterministic ECMWF daily max/min, the same values the day rows in the app show."""
+    q = {
+        "latitude": LAT,
+        "longitude": LON,
+        "models": "ecmwf_ifs",
+        "daily": "temperature_2m_max,temperature_2m_min",
+        "forecast_days": 16,
+        "timezone": "Europe/Berlin",
+    }
+    url = f"https://api.open-meteo.com/v1/forecast?{urllib.parse.urlencode(q)}"
+    req = urllib.request.Request(url, headers={"User-Agent": "wetter2000-trend-build"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        d = json.load(r)["daily"]
+    return {t: (mx, mn) for t, mx, mn in zip(d["time"], d["temperature_2m_max"], d["temperature_2m_min"])}
+
+
 def percentile(values, q):
     """Linear-interpolated percentile (q in 0..100)."""
     s = sorted(values)
@@ -91,6 +108,8 @@ def summarize(hourly):
                 sums.append(sum(rv[i] for i in idx if rv[i] is not None))
         if len(maxs) < 10:
             continue
+        ctrl = dict(temps).get("temperature_2m") or temps[0][1]
+        hours = sum(1 for i in idx if ctrl[i] is not None)
         pct = lambda arr: {f"p{q}": round(percentile(arr, q), 1) for q in (10, 25, 50, 75, 90)}
         days.append(
             {
@@ -103,6 +122,7 @@ def summarize(hourly):
                     "prob": round(sum(1 for x in sums if x >= RAIN_DAY_MM) / len(sums), 2),
                 },
                 "members": len(maxs),
+                "hours": hours,
             }
         )
     return days
@@ -126,7 +146,8 @@ def main():
     path = Path(__file__).resolve().parent.parent / "public" / "trend.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        days = summarize(fetch()["hourly"])
+        raw = fetch()
+        days = summarize(raw["hourly"])
         if len(days) < 10:
             raise RuntimeError(f"only {len(days)} days")
     except Exception as e:  # noqa: BLE001
@@ -134,6 +155,16 @@ def main():
         if keep_published(path):
             return
         raise SystemExit("trend data not available")
+    # Diagnostics: compare with the deterministic run shown in the day rows.
+    try:
+        det = fetch_det()
+        print("date        hrs  det max/min   ens p50 max/min")
+        for d in days:
+            mx, mn = det.get(d["date"], (None, None))
+            d["det"] = {"max": mx, "min": mn}
+            print(f"{d['date']}  {d['hours']:>3}  {mx!s:>5}/{mn!s:<5}  {d['max']['p50']:>5}/{d['min']['p50']}")
+    except Exception as e:  # noqa: BLE001
+        print(f"deterministic comparison failed: {e}", file=sys.stderr)
     out = {
         "source": "ECMWF-Ensemble via Open-Meteo (CC BY 4.0)",
         "model": MODEL,
