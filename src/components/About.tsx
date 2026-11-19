@@ -27,6 +27,13 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             zeigt den Median aller Modelle, die Fläche ihre Spanne.
           </p>
           <p>
+            Ab dem vierten Tag reicht von diesen Modellen nur noch ICON-EU (DWD, etwa 120 Stunden). Solange es den Tag zu
+            mindestens {Math.round(MIN_COVERAGE * 100)} % abdeckt, wird es mit dem ECMWF-Hauptlauf verglichen: Temperatur =
+            Anteil der Stunden, in denen beide höchstens ±{fmt1(TEMP_TOLERANCE)} °C auseinanderliegen; Regen = beide mit
+            Regen oder beide trocken (●●●), sonst uneinig (●○○). Mit nur 2 Modellen ist das weniger belastbar als für die
+            ersten 3 Tage. Die Fläche im Diagramm zeigt dann den Abstand zwischen ECMWF und ICON-EU.
+          </p>
+          <p>
             {EPS_MODEL.name} ({EPS_MODEL.members} Läufe) wird gleich berechnet und separat angezeigt. Das Ergebnis ist
             eine Modell-Übereinstimmung, keine kalibrierte Wahrscheinlichkeit.
           </p>

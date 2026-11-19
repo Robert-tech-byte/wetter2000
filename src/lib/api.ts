@@ -1,4 +1,4 @@
-import { AGREEMENT_DAYS, EPS_MODEL, FOEHN, FORECAST_DAYS, HIRES_MODELS, LOCATION } from './config';
+import { AGREEMENT_DAYS, EPS_MODEL, FOEHN, FORECAST_DAYS, HIRES_MODELS, ICON_EU_FETCH_DAYS, LOCATION } from './config';
 import { EXTRA_VARS, type Member } from './agreement';
 
 const OPEN_METEO = 'https://api.open-meteo.com/v1/forecast';
@@ -112,6 +112,29 @@ export async function fetchHiresModels(): Promise<MemberSet> {
       cloud: (h[`cloud_cover_${m.id}`] as (number | null)[]) ?? [],
       extra: Object.fromEntries(EXTRA_VARS.map((v) => [v, (h[`${v}_${m.id}`] as (number | null)[]) ?? []])),
     })),
+  };
+}
+
+export interface ModelSeries {
+  time: string[];
+  temperature: (number | null)[];
+  precipitation: (number | null)[];
+}
+
+/** ICON-EU alone, for the days after the agreement period (as far as the model reaches). */
+export async function fetchIconEu(): Promise<ModelSeries> {
+  const data = await getJson<HourlyResponse>(
+    `${OPEN_METEO}?${params({
+      models: 'icon_eu',
+      forecast_days: ICON_EU_FETCH_DAYS,
+      hourly: 'temperature_2m,precipitation',
+    })}`,
+  );
+  const h = data.hourly;
+  return {
+    time: h.time as string[],
+    temperature: (h.temperature_2m as (number | null)[]) ?? [],
+    precipitation: (h.precipitation as (number | null)[]) ?? [],
   };
 }
 

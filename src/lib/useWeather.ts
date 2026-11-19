@@ -5,10 +5,12 @@ import {
   fetchEnsemble,
   fetchFoehn,
   fetchHiresModels,
+  fetchIconEu,
   type CurrentObservation,
   type EcmwfForecast,
   type FoehnSeries,
   type MemberSet,
+  type ModelSeries,
 } from './api';
 
 export interface Loadable<T> {
@@ -24,6 +26,7 @@ export interface WeatherState {
   eps: Loadable<MemberSet>;
   current: Loadable<CurrentObservation>;
   foehn: Loadable<{ munich: FoehnSeries; bozen: FoehnSeries }>;
+  iconEu: Loadable<ModelSeries>;
 }
 
 const empty = { data: null, error: null };
@@ -45,16 +48,18 @@ export function useWeather() {
     eps: empty,
     current: empty,
     foehn: empty,
+    iconEu: empty,
   });
 
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true }));
-    const [ecmwf, hires, eps, current, foehn] = await Promise.allSettled([
+    const [ecmwf, hires, eps, current, foehn, iconEu] = await Promise.allSettled([
       fetchEcmwf(),
       fetchHiresModels(),
       fetchEnsemble(),
       fetchCurrentObservation(),
       fetchFoehn(),
+      fetchIconEu(),
     ]);
     setState({
       loading: false,
@@ -64,6 +69,7 @@ export function useWeather() {
       eps: settle(eps),
       current: settle(current),
       foehn: settle(foehn),
+      iconEu: settle(iconEu),
     });
   }, []);
 

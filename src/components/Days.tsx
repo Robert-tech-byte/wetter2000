@@ -6,7 +6,8 @@ import { compass } from '../lib/hourly';
 
 const PressureMap = lazy(() => import('./PressureMap').then((m) => ({ default: m.PressureMap })));
 import { analyzeDays, dayConfidence, median, rainConsensus, type DayAgreement, type ConfidenceLevel } from '../lib/agreement';
-import type { EcmwfForecast, MemberSet } from '../lib/api';
+import type { EcmwfForecast, MemberSet, ModelSeries } from '../lib/api';
+import { pairDays, type PairDay } from '../lib/pair';
 import { AGREEMENT_DAYS, EPS_MODEL, HIRES_MODELS, TEMP_TOLERANCE } from '../lib/config';
 import { fmt0, fmt1, mm, pct } from '../lib/format';
 import { formatDayShort, hhmm, localHourKey, relativeDayName } from '../lib/time';
@@ -21,6 +22,7 @@ interface Props {
   eps: MemberSet | null;
   pressure: PressureData | null;
   foehn: { munich: FoehnSeries; bozen: FoehnSeries } | null;
+  iconEu: ModelSeries | null;
 }
 
 const level = (v: number | null): ConfidenceLevel | null => (v == null ? null : v >= 0.8 ? 3 : v >= 0.5 ? 2 : 1);
@@ -45,11 +47,25 @@ function modelHours(set: MemberSet, date: string): HourPoint[] {
   return out;
 }
 
-function ecmwfHours(e: EcmwfForecast, date: string): HourPoint[] {
+function ecmwfHours(e: EcmwfForecast, date: string, other?: ModelSeries | null): HourPoint[] {
+  const idx = other ? new Map(other.time.map((t, i) => [t, i])) : null;
   return e.hourly.time
-    .map((t, i) => ({ time: t, temp: e.hourly.temperature_2m[i], rain: e.hourly.precipitation[i] }))
+    .map((t, i) => {
+      const temp = e.hourly.temperature_2m[i];
+      const j = idx?.get(t);
+      const o = j != null ? other!.temperature[j] : null;
+      // With a second model the band shows how far ICON-EU deviates from the ECMWF line.
+      const band = temp != null && o != null ? { lo: Math.min(temp, o), hi: Math.max(temp, o) } : {};
+      return { time: t, temp, rain: e.hourly.precipitation[i], ...band };
+    })
     .filter((p) => p.time.startsWith(date));
 }
+
+const ecmwfSeries = (e: EcmwfForecast): ModelSeries => ({
+  time: e.hourly.time,
+  temperature: e.hourly.temperature_2m,
+  precipitation: e.hourly.precipitation,
+});
 
 function FoehnNote({ day }: { day: FoehnDay }) {
   return (
@@ -114,6 +130,76 @@ function Certainty({ day }: { day: DayAgreement }) {
         </dd>
       </div>
     </dl>
+  );
+}
+
+/** Days after the agreement period: ECMWF main run against ICON-EU (as long as it reaches). */
+function PairCertainty({ p }: { p: PairDay }) {
+  const deg = (v: number) => `${fmt1(v)}°`;
+  const rainText = p.rainAgree
+    ? p.ecmwf.rains
+      ? 'beide Modelle mit Regen'
+      : 'beide Modelle trocken'
+    : p.other.rains
+      ? 'nur ICON-EU mit Regen'
+      : 'nur ECMWF mit Regen';
+  return (
+    <>
+      <dl className="certainty">
+        <div>
+          <dt>Temperatur</dt>
+          <dd>
+            <span className="cert-line">
+              <ConfidenceDots level={p.tempLevel} />
+              <strong>{WORD[p.tempLevel]}</strong>
+            </span>
+            <span className="cert-why">
+              ICON-EU in {p.inTol} von {p.hours} Stunden innerhalb ±{fmt1(TEMP_TOLERANCE)} °C von ECMWF
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt>Regen</dt>
+          <dd>
+            <span className="cert-line">
+              <ConfidenceDots level={p.rainLevel} />
+              <strong>{WORD[p.rainLevel]}</strong>
+            </span>
+            <span className="cert-why">{rainText}</span>
+          </dd>
+        </div>
+      </dl>
+      <table className="mini">
+        <thead>
+          <tr>
+            <th>Modell</th>
+            <th>Tief / Hoch</th>
+            <th>Regen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              ECMWF IFS <small>9 km</small>
+            </td>
+            <td>
+              {deg(p.ecmwf.tMin)} / {deg(p.ecmwf.tMax)}
+            </td>
+            <td className={p.ecmwf.rains ? 'wet' : ''}>{mm(p.ecmwf.rainSum)}</td>
+          </tr>
+          <tr>
+            <td>
+              ICON-EU <small>7 km</small>
+            </td>
+            <td>
+              {deg(p.other.tMin)} / {deg(p.other.tMax)}
+            </td>
+            <td className={p.other.rains ? 'wet' : ''}>{mm(p.other.rainSum)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="note">Ab hier nur noch 2 Modelle im Vergleich: weniger belastbar als für heute bis übermorgen.</p>
+    </>
   );
 }
 
@@ -208,7 +294,7 @@ function PowerDetails({
   );
 }
 
-export function Days({ ecmwf, hires, eps, pressure, foehn }: Props) {
+export function Days({ ecmwf, hires, eps, pressure, foehn, iconEu }: Props) {
   const nowKey = localHourKey();
   const today = nowKey.slice(0, 10);
 
@@ -218,6 +304,11 @@ export function Days({ ecmwf, hires, eps, pressure, foehn }: Props) {
   );
   const foehnDays = useMemo(() => (foehn ? analyzeFoehn(foehn.munich, foehn.bozen) : []), [foehn]);
   const epsDays = useMemo(() => (eps ? analyzeDays(eps.time, eps.members, nowKey, AGREEMENT_DAYS) : []), [eps, nowKey]);
+
+  const pairs = useMemo(
+    () => (ecmwf && iconEu ? pairDays(ecmwfSeries(ecmwf), iconEu, ecmwf.daily.time.slice(AGREEMENT_DAYS)) : []),
+    [ecmwf, iconEu],
+  );
 
   if (!ecmwf) return null;
   const d = ecmwf.daily;
@@ -243,7 +334,8 @@ export function Days({ ecmwf, hires, eps, pressure, foehn }: Props) {
       {days.map((x, k) => {
         const a = k < AGREEMENT_DAYS ? (agreement.find((g) => g.date === x.date) ?? null) : null;
         const conf = a ? dayConfidence(a) : null;
-        const hours = a && hires ? modelHours(hires, x.date) : ecmwfHours(ecmwf, x.date);
+        const pair = k >= AGREEMENT_DAYS ? (pairs.find((p) => p.date === x.date) ?? null) : null;
+        const hours = a && hires ? modelHours(hires, x.date) : ecmwfHours(ecmwf, x.date, pair ? iconEu : null);
         const f = foehnDays.find((d) => d.date === x.date && d.active) ?? null;
         return (
           <DayRow
@@ -263,13 +355,23 @@ export function Days({ ecmwf, hires, eps, pressure, foehn }: Props) {
                 <RainCell p={null} mmValue={x.rain} />
               )
             }
-            trailing={a ? <ConfidenceDots level={conf?.level ?? null} models={a.members.length} /> : null}
+            trailing={
+              a ? (
+                <ConfidenceDots level={conf?.level ?? null} models={a.members.length} />
+              ) : pair ? (
+                <ConfidenceDots level={pair.level} models={2} />
+              ) : null
+            }
           >
             <DayChart points={hours} nowKey={x.date === today ? nowKey : undefined} />
             {a ? (
               <Certainty day={a} />
+            ) : pair ? (
+              <PairCertainty p={pair} />
             ) : (
-              <p className="note">ECMWF IFS. Wie sicher die Vorhersage ist, wird nur für die ersten 3 Tage berechnet.</p>
+              <p className="note">
+                ECMWF IFS. Wie sicher die Vorhersage ist, wird berechnet, solange ICON-EU zum Vergleich reicht (etwa 5 Tage).
+              </p>
             )}
             {f && <FoehnNote day={f} />}
             <PowerDetails day={a} eps={epsDays.find((e) => e.date === x.date) ?? null} basics={x} pressure={pressure} date={x.date} />

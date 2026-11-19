@@ -13,6 +13,11 @@ export const RAIN_THRESHOLD = 0.1;
 export const MIN_COVERAGE = 0.75;
 /** Number of days (today included) for the agreement analysis. */
 export const AGREEMENT_DAYS = 3;
+/**
+ * From day AGREEMENT_DAYS on only ICON-EU (DWD, ~7 km, 120 h) is still available among the
+ * high-resolution models; it is compared with the ECMWF main run as long as it reaches.
+ */
+export const ICON_EU_FETCH_DAYS = 6;
 /** Length of the main forecast in days (ECMWF IFS). */
 export const FORECAST_DAYS = 15;
 
