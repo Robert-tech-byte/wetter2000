@@ -43,6 +43,21 @@ export default function App() {
 
       <Commute radar={radar.data} onRoute={setRoute} />
 
+      <div className="refresh-row">
+        <button
+          type="button"
+          className="gw-button pill-fixed"
+          disabled={w.loading}
+          title={w.updatedAt ? `Stand ${w.updatedAt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : undefined}
+          onClick={() => {
+            w.reload();
+            radar.reload();
+          }}
+        >
+          {w.loading ? 'Lädt …' : 'Aktualisieren'}
+        </button>
+      </div>
+
       {w.loading && !w.updatedAt ? (
         <div className="loading" aria-live="polite">
           Lade Wetterdaten …

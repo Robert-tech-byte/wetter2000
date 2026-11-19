@@ -30,7 +30,6 @@ export function relativeDayName(iso: string, todayIso: string): string {
   const diff = Math.round((dateOnly(iso).getTime() - dateOnly(todayIso).getTime()) / 86400000);
   if (diff === 0) return 'Heute';
   if (diff === 1) return 'Morgen';
-  if (diff === 2) return 'Übermorgen';
   return WEEKDAY.format(dateOnly(iso));
 }
 

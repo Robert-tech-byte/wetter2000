@@ -1416,6 +1416,20 @@ table.mini small {
   background: transparent;
   cursor: pointer;
 }
+/* GroWeLa and Aktualisieren share one width so they line up on the right edge. */
+.gw-button.pill-fixed {
+  width: 7.6rem;
+  text-align: center;
+}
+.gw-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.refresh-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
 .gw-button[aria-expanded='true'] {
   background: var(--link);
   color: var(--cta-fg);

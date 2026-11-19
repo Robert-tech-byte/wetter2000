@@ -69,7 +69,7 @@ export function Now({ current, ecmwf, pressure, foehn }: Props) {
       <div className="now-gw">
         <button
           type="button"
-          className="gw-button"
+          className="gw-button pill-fixed"
           aria-expanded={gw}
           aria-controls="growela"
           title="Großwetterlage"

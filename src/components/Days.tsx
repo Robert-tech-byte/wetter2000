@@ -536,7 +536,8 @@ export function Days({
             id={`day-${x.date}`}
             name={relativeDayName(x.date, today)}
             date={
-              k < AGREEMENT_DAYS ? "" : formatDayShort(x.date).split(" ")[1]
+              // Heute/Morgen stand alone; from the third day on weekday + date like all rows.
+              k < 2 ? "" : formatDayShort(x.date).split(" ")[1]
             }
             badge={
               f ? (
