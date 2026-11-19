@@ -1,3 +1,4 @@
+import type { PastWeather } from './tendency';
 import { AGREEMENT_DAYS, AIFS_MODEL, EPS_MODEL, EU_EPS_MODEL, FOEHN, FORECAST_DAYS, HIRES_MODELS, LOCATION } from './config';
 import { EXTRA_VARS, type Member } from './agreement';
 
@@ -181,14 +182,21 @@ export interface CurrentObservation {
     pressure_msl: number | null;
     cloud_cover: number | null;
     icon: string | null;
+    source_id?: number;
   };
-  sources: { id: number; station_name: string; distance: number }[];
+  sources: { id: number; station_name: string; distance: number; dwd_station_id?: string | null }[];
 }
 
 export function fetchCurrentObservation(): Promise<CurrentObservation> {
   return getJson(
     `${BRIGHT_SKY}/current_weather?lat=${LOCATION.lat}&lon=${LOCATION.lon}&tz=${encodeURIComponent(LOCATION.timezone)}`,
   );
+}
+
+/** Hourly observations between two timestamps (ISO with offset), for the temperature tendency. */
+export function fetchPastWeather(from: string, to: string): Promise<PastWeather> {
+  const q = new URLSearchParams({ lat: String(LOCATION.lat), lon: String(LOCATION.lon), date: from, last_date: to, tz: LOCATION.timezone });
+  return getJson(`${BRIGHT_SKY}/weather?${q}`);
 }
 
 export interface RadarResponse {

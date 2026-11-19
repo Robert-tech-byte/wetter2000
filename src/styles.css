@@ -180,6 +180,38 @@ button {
   letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums;
 }
+.now-temp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.tendency {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  margin-top: 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.tendency svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.tendency:focus-visible {
+  outline: 2px solid var(--link);
+}
+.tendency-detail {
+  font: 400 0.78rem var(--font-body);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .now-icon {
   width: 76px;
   height: 76px;

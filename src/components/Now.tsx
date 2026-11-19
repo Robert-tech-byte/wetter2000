@@ -7,6 +7,33 @@ import { fmt0, fmt1, mm } from '../lib/format';
 import { clock, hhmm } from '../lib/time';
 import { describeBrightSkyIcon, describeWeather } from '../lib/weatherCodes';
 import { WeatherIcon } from './Icon';
+import { useTendency } from '../lib/useTendency';
+import type { Tendency } from '../lib/tendency';
+
+const TENDENCY_WORD = { up: 'steigend', down: 'fallend', flat: 'gleichbleibend' } as const;
+const signed = (v: number) => (v > 0 ? '+' : v < 0 ? '−' : '±') + fmt1(Math.abs(v)).replace('-', '');
+
+/** Small arrow for the temperature tendency of the last hour; tap shows the exact change. */
+function TendencyArrow({ t }: { t: Tendency }) {
+  const [open, setOpen] = useState(false);
+  const rot = t.dir === 'up' ? -90 : t.dir === 'down' ? 90 : 0;
+  const detail = `${signed(t.delta)} °C seit ${hhmm(t.from)}`;
+  return (
+    <button
+      type="button"
+      className="tendency"
+      aria-expanded={open}
+      aria-label={`Tendenz letzte Stunde: ${TENDENCY_WORD[t.dir]}, ${detail}`}
+      title={`Letzte Stunde: ${detail}`}
+      onClick={() => setOpen((o) => !o)}
+    >
+      <svg viewBox="0 0 20 20" aria-hidden="true" style={{ transform: `rotate(${rot}deg)` }}>
+        <path d="M3 10h13M11 5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {open && <span className="tendency-detail">{detail}</span>}
+    </button>
+  );
+}
 
 interface Props {
   current: CurrentObservation | null;
@@ -24,6 +51,7 @@ export function Now({ current, ecmwf, pressure, foehn }: Props) {
   const t = obs?.temperature ?? model?.temperature_2m ?? null;
   const cond = describeBrightSkyIcon(obs?.icon) ?? describeWeather(model?.weather_code);
   const [more, setMore] = useState(false);
+  const tendency = useTendency(current);
   const [gw, setGw] = useState(false);
   const hi = d?.temperature_2m_max[0];
   const lo = d?.temperature_2m_min[0];
@@ -31,7 +59,10 @@ export function Now({ current, ecmwf, pressure, foehn }: Props) {
   return (
     <section className="now" aria-label="Wetter jetzt">
       <div className="now-main">
-        <div className="now-temp">{t == null ? '–' : `${fmt1(t)}°`}</div>
+        <div className="now-temp-row">
+          <div className="now-temp">{t == null ? '–' : `${fmt1(t)}°`}</div>
+          {obs?.temperature != null && tendency && <TendencyArrow t={tendency} />}
+        </div>
         <WeatherIcon name={cond.icon} className="now-icon" />
       </div>
       <p className="now-cond">{cond.text}</p>
