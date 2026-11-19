@@ -27,4 +27,11 @@ describe('tendency', () => {
     expect(tendencyFrom(now, past([['2026-11-19T12:00:00+01:00', 5, 3]]))).toBeNull();
     expect(tendencyFrom(now, past([['2026-11-19T11:30:00+01:00', 5, 1]]))).toBeNull();
   });
+
+  it('interpolates between hourly observations for a half-hourly reading', () => {
+    const half = { timestamp: '2026-11-19T13:30:00+01:00', temperature: 8.3, stationId: '03379' };
+    const t = tendencyFrom(half, past([['2026-11-19T12:00:00+01:00', 8.0, 1], ['2026-11-19T13:00:00+01:00', 8.4, 1]]));
+    // 12:30 ≈ 8.2 → +0.1
+    expect(t).toEqual({ delta: 0.1, dir: 'flat', from: '2026-11-19T12:30:00+01:00' });
+  });
 });

@@ -183,11 +183,16 @@ button {
   font-variant-numeric: tabular-nums;
 }
 .now-temp-row {
-  /* The temperature keeps its width; the icon gives way. */
+  /* The temperature keeps its width; the icon gives way. The arrow sits under the degree sign. */
   flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  position: relative;
+  padding-right: 2px;
+}
+.now-temp-row .tendency {
+  position: absolute;
+  right: -2px;
+  bottom: 0.9rem;
+  margin: 0;
 }
 .tendency {
   position: relative;
@@ -196,7 +201,6 @@ button {
   align-items: center;
   gap: 6px;
   padding: 4px;
-  margin-top: 6px;
   border: 0;
   background: none;
   color: var(--muted);
@@ -216,7 +220,8 @@ button {
   /* Floats below the arrow so opening it never moves the layout. */
   position: absolute;
   top: 100%;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 2;
   padding: 4px 8px;
   border: 1px solid var(--line);

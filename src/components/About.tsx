@@ -19,7 +19,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
           <h3>Tendenz</h3>
           <p>
             Der Pfeil neben der Temperatur vergleicht den aktuellen Messwert der DWD-Station München-Stadt mit dem Wert
-            derselben Station von vor einer Stunde (Bright Sky): ↑ ab +0,5 °C, ↓ ab −0,5 °C, sonst →. Antippen zeigt die
+            derselben Station von vor einer Stunde (Bright Sky; meldet die Station halbstündlich, wird zwischen den beiden stündlichen Messungen davor und danach gemittelt): ↑ ab +0,5 °C, ↓ ab −0,5 °C, sonst →. Antippen zeigt die
             genaue Änderung. Fehlt der Vergleichswert, erscheint kein Pfeil.
           </p>
           <h3>Treffsicherheit (Punkte)</h3>

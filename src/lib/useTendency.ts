@@ -16,7 +16,7 @@ export function useTendency(current: CurrentObservation | null): Tendency | null
     const end = Date.parse(ts);
     if (!Number.isFinite(end)) return;
     let alive = true;
-    const from = new Date(end - 90 * 60_000).toISOString();
+    const from = new Date(end - 120 * 60_000).toISOString();
     fetchPastWeather(from, new Date(end).toISOString())
       .then((past) => alive && setTendency(tendencyFrom({ timestamp: ts, temperature: temp, stationId }, past)))
       .catch(() => undefined);
