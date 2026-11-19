@@ -62,7 +62,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             jeweils der mittlere Wert aller Läufe (Median) als wahrscheinlichster Wert. Rot: Höchstwert, blau: Tiefstwert.
             Säule und Zahl darüber: Regenmenge in mm (Median; rechnet höchstens die Hälfte der Läufe mit Regen, ist sie
             meist 0 und entfällt). Zahl darunter: Anteil der Läufe mit mindestens 0,1 mm Regen am Tag. Gestaltet nach den
-            Prinzipien von Dieter Rams: nur die nötigen Angaben, die Nulllinie als einzige Hilfslinie.
+            Prinzipien von Dieter Rams: nur die nötigen Angaben, die Nulllinie als einzige Hilfslinie. Antippen eines Tages öffnet ihn in der Tagesliste.
           </p>
           <h3>Föhn</h3>
           <p>

@@ -128,9 +128,6 @@ export function Trend14({ data }: { data: TrendData | null }) {
         </span>
         <span>H = heute</span>
       </p>
-      <p className="note">
-        Mittlere Werte aus {days[0].members} Läufen des ECMWF-Ensembles (Open-Meteo). Antippen eines Tages öffnet ihn unten.
-      </p>
     </section>
   );
 }
