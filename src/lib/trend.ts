@@ -27,7 +27,9 @@ const mean = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length;
 /** Weekday name; from the second week on with the date, because weekday names repeat. */
 function dayName(days: TrendDay[], date: string): string {
   const name = WD.format(new Date(`${date}T00:00:00Z`));
-  if (days.findIndex((d) => d.date === date) < 7) return name;
+  const i = days.findIndex((d) => d.date === date);
+  if (i === 0) return 'heute';
+  if (i < 7) return name;
   return `${name} (${Number(date.slice(8, 10))}.${Number(date.slice(5, 7))}.)`;
 }
 
@@ -36,9 +38,9 @@ export const RAIN_PROB = 0.6;
 export const RAIN_MM = 1;
 const isWet = (d: TrendDay) => d.rain.prob >= RAIN_PROB && d.rain.p50 >= RAIN_MM;
 
-/** The next 14 days starting tomorrow. */
-export function next14(data: TrendData, today: string): TrendDay[] {
-  return data.days.filter((d) => d.date > today).slice(0, 14);
+/** The next `count` days starting today. */
+export function nextDays(data: TrendData, today: string, count = 15): TrendDay[] {
+  return data.days.filter((d) => d.date >= today).slice(0, count);
 }
 
 function rainSentence(days: TrendDay[]): string {
@@ -53,7 +55,7 @@ function rainSentence(days: TrendDay[]): string {
   let i1 = i0;
   while (i1 + 1 < days.length && isWet(days[i1 + 1])) i1++;
   let first: string;
-  if (i0 === i1) first = `Regen vor allem am ${name(days[i0])}`;
+  if (i0 === i1) first = i0 === 0 ? 'Regen vor allem heute' : `Regen vor allem am ${name(days[i0])}`;
   else if (i0 === 0) first = `Regen bis ${name(days[i1])}`;
   else first = `Regen von ${name(days[i0])} bis ${name(days[i1])}`;
   const later = days.slice(i1 + 1).filter(isWet).length;

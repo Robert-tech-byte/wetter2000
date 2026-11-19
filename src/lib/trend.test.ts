@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { next14, trendSummary, type TrendData, type TrendDay } from './trend';
+import { nextDays, trendSummary, type TrendData, type TrendDay } from './trend';
 import fixtureJson from './__fixtures__/trend-2026-11-18.json';
 
 const fixture = fixtureJson as TrendData;
@@ -40,10 +40,10 @@ describe('trend', () => {
     expect(trendSummary(days)).toBe('Temperaturen ohne große Änderung. Regen von Freitag bis Samstag, danach überwiegend trocken.');
   });
 
-  it('next14 starts tomorrow', () => {
-    const days = Array.from({ length: 15 }, (_, i) => day(i, 8, 3, 0.1));
-    const n = next14({ source: '', model: '', generated: '', days }, '2026-11-19');
-    expect(n[0].date).toBe('2026-11-20');
-    expect(n).toHaveLength(14);
+  it('nextDays starts today', () => {
+    const days = Array.from({ length: 16 }, (_, i) => day(i, 8, 3, 0.1));
+    const n = nextDays({ source: '', model: '', generated: '', days }, '2026-11-19');
+    expect(n[0].date).toBe('2026-11-19');
+    expect(n).toHaveLength(15);
   });
 });

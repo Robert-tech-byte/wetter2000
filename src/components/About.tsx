@@ -55,12 +55,14 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             danach nach der Krümmung des Druckfelds. Angelehnt an die objektive Wetterlagenklassifikation des DWD, die
             aber zusätzlich Höhendaten nutzt; die Einordnung hier ist eine Näherung.
           </p>
-          <h3>14-Tage-Trend</h3>
+          <h3>15 Tage</h3>
           <p>
-            ECMWF-Ensemble (Kontrolllauf und 50 Varianten, 0,25°) über Open-Meteo, alle 6 Stunden neu geladen. Je Tag
-            werden Höchst- und Tiefstwert jedes Laufs bestimmt. Offener Punkt und Zahl: Median, zur Orientierung verbunden. Dunkler Querstrich: der einzelne ECMWF-Hauptlauf, aus dem die Werte in den Tageszeilen stammen; liegt er weit neben den Strichen, ist er ein Ausreißer. Kräftiger Strich: mittlere 50 %
-            der Läufe (wahrscheinlich), feiner Strich: mittlere 80 % (möglich). Regen: Füllung = Median der Tagessumme,
-            Rahmen = 90. Perzentil, Zahl darunter = Anteil der Läufe mit mindestens 0,1 mm.
+            ECMWF-Ensemble (Kontrolllauf und 50 Varianten, 0,25°) über Open-Meteo, alle 6 Stunden neu geladen, heute
+            eingeschlossen. Je Tag werden Höchst- und Tiefstwert sowie die Regensumme jedes Laufs bestimmt; gezeigt wird
+            jeweils der mittlere Wert aller Läufe (Median) als wahrscheinlichster Wert. Rot: Höchstwert, blau: Tiefstwert.
+            Säule und Zahl darüber: Regenmenge in mm (Median; rechnet höchstens die Hälfte der Läufe mit Regen, ist sie
+            meist 0 und entfällt). Zahl darunter: Anteil der Läufe mit mindestens 0,1 mm Regen am Tag. Gestaltet nach den
+            Prinzipien von Dieter Rams: nur die nötigen Angaben, die Nulllinie als einzige Hilfslinie.
           </p>
           <h3>Föhn</h3>
           <p>

@@ -1453,7 +1453,7 @@ table.mini small {
   font-weight: 600;
 }
 
-/* 14-Tage-Trend (D2 + R2) */
+/* 15 Tage (Konzept B, nach Dieter Rams) */
 :root {
   --t-max: #d9480f;
   --t-min: #1c64d2;
@@ -1472,11 +1472,6 @@ table.mini small {
   display: grid;
   gap: 6px;
 }
-.t-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
 .t-sum {
   margin: 0;
   font-size: 0.92rem;
@@ -1490,90 +1485,67 @@ table.mini small {
 }
 .t-chart text {
   font-family: var(--font-body);
-  font-size: 9px;
-}
-.t-grid {
-  stroke: var(--line);
-  stroke-width: 1;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
 }
 .t-zero {
-  stroke: var(--muted);
-  stroke-opacity: 0.5;
+  stroke: var(--map-ring);
+  stroke-width: 0.8;
 }
-.t-week {
+.t-base {
   stroke: var(--line);
-  stroke-dasharray: 2 3;
+  stroke-width: 0.8;
 }
-.t-axis,
-.t-day {
+.t-axis {
   fill: var(--muted);
-}
-.t-chart .t-pct {
-  fill: var(--muted);
-  font-size: 7.5px;
-}
-.t-day.strong {
-  font-weight: 600;
-}
-.t-poss {
-  stroke-width: 1.5;
-  stroke-opacity: 0.4;
-  stroke-linecap: round;
-}
-.t-likely {
-  stroke-width: 4;
-  stroke-opacity: 0.8;
-  stroke-linecap: round;
 }
 .t-line {
   fill: none;
-  stroke-width: 1.1;
-  stroke-opacity: 0.7;
+  stroke-width: 1.2;
   stroke-linejoin: round;
 }
-.t-dot {
-  fill: var(--surface);
-  stroke-width: 1.5;
-}
-.t-max line,
-.t-max .t-line,
-.t-max .t-dot {
+.t-line.t-max {
   stroke: var(--t-max);
 }
-.t-min line,
-.t-min .t-line,
-.t-min .t-dot {
+.t-line.t-min {
   stroke: var(--t-min);
 }
-.t-chart .t-val {
-  font-weight: 600;
-  paint-order: stroke;
-  stroke: var(--bg);
-  stroke-width: 2.5px;
-  stroke-linejoin: round;
-}
-.t-max .t-val {
+.t-dot-max {
   fill: var(--t-max);
 }
-.t-min .t-val {
+.t-dot-min {
+  fill: var(--bg);
+  stroke: var(--t-min);
+  stroke-width: 1.3;
+}
+.t-chart .t-val-max {
+  fill: var(--t-max);
+  font-weight: 600;
+}
+.t-chart .t-val-min {
   fill: var(--t-min);
-}
-.t-chart .t-det {
-  stroke: var(--fg);
-  stroke-width: 1.6;
-  stroke-linecap: butt;
-}
-.t-det-c {
-  color: var(--fg);
 }
 .t-rain {
   fill: var(--accent);
 }
-.t-rain-poss {
-  fill: none;
-  stroke: var(--accent);
-  stroke-opacity: 0.55;
-  stroke-width: 1;
+.t-chart .t-mm {
+  fill: var(--accent);
+  font-size: 8.5px;
+}
+.t-chart .t-pct {
+  fill: var(--muted);
+  font-size: 9px;
+}
+.t-chart .t-pct.wet {
+  fill: var(--accent);
+  font-weight: 600;
+}
+.t-day {
+  fill: var(--muted);
+}
+.t-day.strong {
+  fill: var(--fg);
+  font-weight: 600;
 }
 .t-hit {
   fill: transparent;
