@@ -10,7 +10,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
       <p className="claim">
         <Logo size={22} />
         <span>
-          Wetter<b>2000</b> · Föhnomenal genau.
+          Wetter<b>2000</b> · Föhnomenal genial.
         </span>
       </p>
       <details className="fold">

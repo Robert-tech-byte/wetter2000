@@ -1,6 +1,6 @@
 # Wetter2000
 
-Föhnomenal genau. Wetter für München. – React + TypeScript + Vite, gehostet auf GitHub Pages.
+Föhnomenal genial. Wetter für München. – React + TypeScript + Vite, gehostet auf GitHub Pages.
 
 ## Aufbau
 
@@ -24,7 +24,7 @@ Parameter (Toleranz, Schwellen, Modellliste) stehen in [`src/lib/config.ts`](src
 - **Logo:** Münchner Skyline (Frauenkirche, Olympiaturm) mit dezenter Zugspitze im Wettersteingebirge, auf Tiefblau. Quelle: `scripts/brand/logo.cjs` (`node scripts/brand/logo.cjs <ordner>` erzeugt `icon.svg`), App-Icons per `node scripts/brand/app-icons.cjs <ordner> public` (benötigt Playwright).
 - **Farben:** Tiefblau `#0F2D4A` (Marke), Isar `#1C7C8C` (Akzent, Links), Föhn `#F2B33D` (Signal); Blau `#2364D2` bleibt Regen vorbehalten.
 - **Schrift:** Inter Tight / Inter, IBM Plex Mono für Messwerte.
-- **Claim:** „Föhnomenal genau.“
+- **Claim:** „Föhnomenal genial.“
 
 ## Icons
 

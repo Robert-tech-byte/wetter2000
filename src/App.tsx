@@ -35,7 +35,7 @@ export default function App() {
           <p className="masthead-name">
             Wetter<b>2000</b>
           </p>
-          <p className="masthead-claim">Föhnomenal genau.</p>
+          <p className="masthead-claim">Föhnomenal genial.</p>
         </div>
       </div>
     </header>
