@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kmToGrid, rainColor, sample } from './radar';
+import { kmToGrid, LUT_STEPS, RAIN_LUT, rainColor, sample, toRate } from './radar';
 
 describe('radar', () => {
   it('bilinear sampling', () => {
@@ -24,5 +24,12 @@ describe('radar', () => {
     expect(rainColor(0.05)).toBeNull();
     expect(rainColor(1)?.[3]).toBeCloseTo(0.72);
     expect(rainColor(100)).not.toBeNull();
+  });
+
+  it('hides the two lowest DWD steps on the map', () => {
+    const alpha = (v: number) => RAIN_LUT[Math.round(v * LUT_STEPS) * 4 + 3];
+    expect(alpha(toRate(1))).toBe(0); // 0.12 mm/h
+    expect(alpha(toRate(2))).toBe(0); // 0.24 mm/h
+    expect(alpha(toRate(3))).toBeGreaterThan(80); // 0.36 mm/h
   });
 });

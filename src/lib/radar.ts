@@ -162,20 +162,30 @@ export function rainColor(v: number): [number, number, number, number] | null {
   return [l[1], l[2], l[3], l[4]];
 }
 
-/** Lookup table for rainColor (RGBA bytes), indexed by round(rate * LUT_STEPS). */
+/**
+ * Map display threshold (mm/h). The DWD data come in steps of 0.01 mm per 5 min (0.12 mm/h);
+ * the two lowest steps (0.12 and 0.24 mm/h) are hidden on the map: such traces mostly do not
+ * reach the ground as noticeable rain and clutter the map.
+ */
+export const MAP_MIN_RATE = 0.3;
+
+/** Lookup table for the map colour (RGBA bytes), indexed by round(rate * LUT_STEPS). */
 export const LUT_STEPS = 50;
 export const RAIN_LUT: Uint8ClampedArray = (() => {
   const max = 60 * LUT_STEPS;
   const lut = new Uint8ClampedArray((max + 1) * 4);
-  const first = rainColor(RAIN_STOPS[0][0])!;
+  const first = rainColor(MAP_MIN_RATE)!;
+  // Starts above 0.24 mm/h so the second-lowest step stays fully hidden.
+  const fadeFrom = 0.26;
   for (let i = 0; i <= max; i++) {
     const v = i / LUT_STEPS;
-    const c = rainColor(v);
-    if (c) lut.set([c[0], c[1], c[2], Math.max(c[3], 0.35) * 255], i * 4);
-    // Soft edge: fade in between half the threshold and the threshold instead of a hard cut.
-    else if (v >= RAIN_STOPS[0][0] / 2) {
-      const f = (v - RAIN_STOPS[0][0] / 2) / (RAIN_STOPS[0][0] / 2);
-      lut.set([first[0], first[1], first[2], 0.35 * 255 * f], i * 4);
+    if (v >= MAP_MIN_RATE) {
+      const c = rainColor(v)!;
+      lut.set([c[0], c[1], c[2], Math.max(c[3], 0.35) * 255], i * 4);
+    } else if (v >= fadeFrom) {
+      // Soft edge: fade in just below the threshold instead of a hard cut.
+      const f = (v - fadeFrom) / (MAP_MIN_RATE - fadeFrom);
+      lut.set([first[0], first[1], first[2], Math.max(first[3], 0.35) * 255 * f], i * 4);
     }
   }
   return lut;

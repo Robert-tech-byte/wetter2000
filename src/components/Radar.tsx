@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fmt1 } from '../lib/format';
 import { nowcastSentence } from '../lib/nowcast';
-import { pointRateAt, rainCss, RAIN_STOPS, type RadarData } from '../lib/radar';
+import { MAP_MIN_RATE, pointRateAt, rainCss, RAIN_STOPS, type RadarData } from '../lib/radar';
 import { clock } from '../lib/time';
 import { RadarCanvas } from './RadarCanvas';
 import { RadarZoom } from './RadarZoom';
@@ -171,12 +171,12 @@ export function Radar({ data, error, route }: { data: RadarData | null; error: s
 }
 
 export function Legend() {
-  const gradient = `linear-gradient(90deg, ${RAIN_STOPS.slice(1)
-    .map(([v]) => rainCss(v, 0.55))
-    .join(', ')})`;
+  const stops = [MAP_MIN_RATE, ...RAIN_STOPS.map(([v]) => v).filter((v) => v > MAP_MIN_RATE)];
+  const gradient = `linear-gradient(90deg, ${stops.map((v) => rainCss(v, 0.55)).join(', ')})`;
+  const min = String(MAP_MIN_RATE).replace('.', ',');
   return (
-    <div className="legend" aria-label="Farbskala Niederschlag 0,1 bis 50 Millimeter pro Stunde">
-      <span>0,1</span>
+    <div className="legend" aria-label={`Farbskala Niederschlag ${min} bis 50 Millimeter pro Stunde`}>
+      <span>{min}</span>
       <i style={{ background: gradient }} />
       <span>50 mm/h</span>
     </div>

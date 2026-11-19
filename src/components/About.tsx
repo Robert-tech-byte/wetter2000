@@ -70,7 +70,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
           </p>
           <h3>Regenradar</h3>
           <p>
-            DWD-Radarkomposit mit 1 km Auflösung, zwischen den Messpunkten weich interpoliert (keine feineren Details als 1 km), alle 5 Minuten: die letzte Stunde gemessen, danach die DWD-Vorhersage
+            DWD-Radarkomposit mit 1 km Auflösung, zwischen den Messpunkten weich interpoliert (keine feineren Details als 1 km), alle 5 Minuten. Werte unter 0,3 mm/h (die beiden kleinsten Stufen der DWD-Daten) sind auf der Karte ausgeblendet; dabei kommt meist kein spürbarer Regen an. Zeitleiste: die letzte Stunde gemessen, danach die DWD-Vorhersage
             für 60 Minuten. Zwischen den Bildern wird überblendet.
           </p>
           <Legend />
