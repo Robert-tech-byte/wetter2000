@@ -10,8 +10,10 @@ interface Props {
   data: RadarData | null;
   /** Fractional frame index; frames are cross-faded in between. */
   t: number;
-  /** Half width of the shown square in km. */
+  /** Half width of the shown area in km. */
   extent: number;
+  /** Half height in km (default: same as extent, i.e. square). */
+  extentY?: number;
   /** Centre of the view in km from Munich (default 0, 0). */
   center?: Km;
   label: string;
@@ -23,10 +25,10 @@ interface Props {
   softness?: Softness;
 }
 
-function makeCanvas(w: number) {
+function makeCanvas(w: number, h = w) {
   const c = document.createElement('canvas');
   c.width = w;
-  c.height = w;
+  c.height = h;
   return c;
 }
 
@@ -36,7 +38,7 @@ const LUT_MAX = RAIN_LUT.length / 4 - 1;
  * Draws the map and the DWD radar. Every screen pixel looks up its exact position in the radar
  * grid (no seams) and reads the rain rate interpolated between the surrounding 1-km cells.
  */
-export function RadarCanvas({ data, t, extent, center, label, route, softness = 'soft' }: Props) {
+export function RadarCanvas({ data, t, extent, extentY = extent, center, label, route, softness = 'soft' }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const theme = useThemeColors();
   const [size, setSize] = useState(0);
@@ -67,33 +69,38 @@ export function RadarCanvas({ data, t, extent, center, label, route, softness = 
 
   const dpr = Math.min(2, typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1);
 
+  const height = Math.round((size * extentY) / extent);
+
   const layers = useMemo(() => {
     if (!size) return null;
     const px = Math.round(size * dpr);
-    const view: View = { size, extent, cx, cy };
-    const under = makeCanvas(px);
-    const over = makeCanvas(px);
+    const pxH = Math.round(height * dpr);
+    const view: View = { size, height, extent, cx, cy };
+    const under = makeCanvas(px, pxH);
+    const over = makeCanvas(px, pxH);
     const u = under.getContext('2d')!;
     const o = over.getContext('2d')!;
     u.scale(dpr, dpr);
     o.scale(dpr, dpr);
     drawUnder(u, view, colors);
     drawOver(o, view, colors, route);
-    return { under, over, px };
-  }, [size, extent, cx, cy, colors, route, dpr]);
+    return { under, over, px, pxH };
+  }, [size, height, extent, cx, cy, colors, route, dpr]);
 
   /** Rain layer resolution: one texel per CSS pixel. */
   const res = size || 1;
+  const resH = height || 1;
 
   /** Fractional radar grid position (row, col) for every texel; NaN outside the grid. */
   const lookup = useMemo(() => {
     if (!data || !size) return null;
     const toGrid = kmToGrid(data.cornersKm, data.rows, data.cols);
-    const pos = new Float32Array(res * res * 2);
-    for (let py = 0; py < res; py++)
+    const pos = new Float32Array(res * resH * 2);
+    const kmPerPx = (2 * extent) / res;
+    for (let py = 0; py < resH; py++)
       for (let px = 0; px < res; px++) {
-        const x = cx + ((px + 0.5) / res) * 2 * extent - extent;
-        const y = cy + extent - ((py + 0.5) / res) * 2 * extent;
+        const x = cx + (px + 0.5 - res / 2) * kmPerPx;
+        const y = cy - (py + 0.5 - resH / 2) * kmPerPx;
         const [r, c] = toGrid(x, y);
         const i = (py * res + px) * 2;
         const inside = r >= -0.5 && c >= -0.5 && r <= data.rows - 0.5 && c <= data.cols - 0.5;
@@ -101,16 +108,16 @@ export function RadarCanvas({ data, t, extent, center, label, route, softness = 
         pos[i + 1] = inside ? Math.max(0, Math.min(data.cols - 1, c)) : NaN;
       }
     return pos;
-  }, [data, extent, cx, cy, res, size]);
+  }, [data, extent, cx, cy, res, resH, size]);
 
-  const rainCanvas = useMemo(() => makeCanvas(res), [res]);
+  const rainCanvas = useMemo(() => makeCanvas(res, resH), [res, resH]);
 
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas || !layers) return;
-    if (canvas.width !== layers.px) {
+    if (canvas.width !== layers.px || canvas.height !== layers.pxH) {
       canvas.width = layers.px;
-      canvas.height = layers.px;
+      canvas.height = layers.pxH;
     }
     const ctx = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -128,9 +135,9 @@ export function RadarCanvas({ data, t, extent, center, label, route, softness = 
       if (softness === 'softer') g = smooth(g, rows, cols);
 
       const rc = rainCanvas.getContext('2d')!;
-      const img = rc.createImageData(res, res);
+      const img = rc.createImageData(res, resH);
       const d = img.data;
-      for (let i = 0, n = res * res; i < n; i++) {
+      for (let i = 0, n = res * resH; i < n; i++) {
         const r = lookup[i * 2];
         if (r !== r) continue; // NaN: outside the radar grid
         const c = lookup[i * 2 + 1];
@@ -162,7 +169,7 @@ export function RadarCanvas({ data, t, extent, center, label, route, softness = 
       ctx.restore();
     }
     ctx.drawImage(layers.over, 0, 0);
-  }, [data, lookup, layers, t, rainCanvas, res, softness]);
+  }, [data, lookup, layers, t, rainCanvas, res, resH, softness]);
 
   return <canvas ref={ref} className="radar-canvas" role="img" aria-label={label} />;
 }

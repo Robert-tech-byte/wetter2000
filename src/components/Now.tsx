@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import type { FoehnSeries } from '../lib/api';
-import type { PressureData } from '../lib/pressure';
-import { GrowelaPanel } from './Growela';
 import type { CurrentObservation, EcmwfForecast } from '../lib/api';
 import { fmt0, fmt1, mm } from '../lib/format';
 import { clock, hhmm } from '../lib/time';
@@ -35,57 +32,42 @@ function TendencyArrow({ t }: { t: Tendency }) {
   );
 }
 
-interface Props {
-  current: CurrentObservation | null;
-  ecmwf: EcmwfForecast | null;
-  pressure: PressureData | null;
-  foehn: { munich: FoehnSeries; bozen: FoehnSeries } | null;
+
+/** Current reading for the header: temperature with tendency, symbol, condition, high/low. */
+export function NowHead({ current, ecmwf }: { current: CurrentObservation | null; ecmwf: EcmwfForecast | null }) {
+  const obs = current?.weather;
+  const model = ecmwf?.current;
+  const d = ecmwf?.daily;
+  const t = obs?.temperature ?? model?.temperature_2m ?? null;
+  const cond = describeBrightSkyIcon(obs?.icon) ?? describeWeather(model?.weather_code);
+  const tendency = useTendency(current);
+  const hi = d?.temperature_2m_max[0];
+  const lo = d?.temperature_2m_min[0];
+  return (
+    <div className="now" aria-label="Wetter jetzt">
+      <div className="now-temp-row">
+        <div className="now-temp">{t == null ? '–' : `${fmt1(t)}°`}</div>
+        {obs?.temperature != null && tendency && <TendencyArrow t={tendency} />}
+      </div>
+      <div className="now-side">
+        <WeatherIcon name={cond.icon} className="now-icon" />
+        <div className="now-text">
+          <span className="now-cond">{cond.text}</span>
+          <span className="now-hl">{hi != null && lo != null ? `H ${fmt0(hi)}° · T ${fmt0(lo)}°` : ''}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export function Now({ current, ecmwf, pressure, foehn }: Props) {
+/** „Mehr zu jetzt“: measured details, shown below the header when opened. */
+export function NowMore({ current, ecmwf }: { current: CurrentObservation | null; ecmwf: EcmwfForecast | null }) {
   const obs = current?.weather;
   const station = current?.sources?.[0];
   const model = ecmwf?.current;
   const d = ecmwf?.daily;
-
-  const t = obs?.temperature ?? model?.temperature_2m ?? null;
-  const cond = describeBrightSkyIcon(obs?.icon) ?? describeWeather(model?.weather_code);
-  const [more, setMore] = useState(false);
-  const tendency = useTendency(current);
-  const [gw, setGw] = useState(false);
-  const hi = d?.temperature_2m_max[0];
-  const lo = d?.temperature_2m_min[0];
-
   return (
-    <section className="now" aria-label="Wetter jetzt">
-      <div className="now-main">
-        <div className="now-temp-row">
-          <div className="now-temp">{t == null ? '–' : `${fmt1(t)}°`}</div>
-          {obs?.temperature != null && tendency && <TendencyArrow t={tendency} />}
-        </div>
-        <WeatherIcon name={cond.icon} className="now-icon" />
-      </div>
-      <p className="now-cond">{cond.text}</p>
-      <div className="now-gw">
-        <button
-          type="button"
-          className="gw-button pill-fixed"
-          aria-expanded={gw}
-          aria-controls="growela"
-          title="Großwetterlage"
-          onClick={() => setGw((v) => !v)}
-        >
-          GroWeLa
-        </button>
-      </div>
-      {gw && <GrowelaPanel pressure={pressure} foehn={foehn} />}
-      <div className="now-hl">
-        <span>{hi != null && lo != null ? `H ${fmt0(hi)}° · T ${fmt0(lo)}°` : ''}</span>
-        <button type="button" className="toggle" aria-expanded={more} aria-controls="now-more" onClick={() => setMore((m) => !m)}>
-          Mehr zu jetzt
-        </button>
-      </div>
-      <div id="now-more" className="now-more" hidden={!more}>
+    <section id="now-more" className="now-more" aria-label="Mehr zu jetzt">
         <dl className="kv">
           {model && (
             <div>
@@ -135,7 +117,6 @@ export function Now({ current, ecmwf, pressure, foehn }: Props) {
               ? `Keine Stationsmessung verfügbar, Modellwert ECMWF IFS (${hhmm(model.time)} Uhr).`
               : ''}
         </p>
-      </div>
     </section>
   );
 }

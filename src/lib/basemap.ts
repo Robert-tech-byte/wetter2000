@@ -67,7 +67,10 @@ export interface MapColors {
 }
 
 export interface View {
+  /** Width in CSS px. */
   size: number;
+  /** Height in CSS px (default: square). The scale is the same in both directions. */
+  height?: number;
   /** Half width of the shown square in km. */
   extent: number;
   /** Centre of the view in km from Munich (default 0, 0). */
@@ -75,11 +78,9 @@ export interface View {
   cy?: number;
 }
 
-export function projector({ size, extent, cx = 0, cy = 0 }: View) {
-  return ([x, y]: Km): [number, number] => [
-    ((x - cx + extent) / (2 * extent)) * size,
-    ((cy + extent - y) / (2 * extent)) * size,
-  ];
+export function projector({ size, height = size, extent, cx = 0, cy = 0 }: View) {
+  const scale = size / (2 * extent);
+  return ([x, y]: Km): [number, number] => [(x - cx) * scale + size / 2, (cy - y) * scale + height / 2];
 }
 
 function trace(ctx: CanvasRenderingContext2D, line: Km[], px: (p: Km) => [number, number]) {
@@ -94,7 +95,7 @@ function trace(ctx: CanvasRenderingContext2D, line: Km[], px: (p: Km) => [number
 export function drawUnder(ctx: CanvasRenderingContext2D, view: View, c: MapColors) {
   const px = projector(view);
   ctx.fillStyle = c.land;
-  ctx.fillRect(0, 0, view.size, view.size);
+  ctx.fillRect(0, 0, view.size, view.height ?? view.size);
 
   ctx.fillStyle = c.water;
   ctx.beginPath();
@@ -220,7 +221,7 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
   label('München', cx + 8, cy + 4, 600, small ? 11 : 13, c.strong, true);
   for (const p of BASEMAP.places) {
     const [x, y] = px(p.at);
-    if (x < 0 || y < 0 || x > view.size || y > view.size) continue;
+    if (x < 0 || y < 0 || x > view.size || y > (view.height ?? view.size)) continue;
     if (!label(p.name, x + 4, y + 3, 500, small ? 9 : 11, c.label)) continue;
     ctx.fillStyle = c.strong;
     ctx.beginPath();
@@ -231,7 +232,7 @@ export function drawOver(ctx: CanvasRenderingContext2D, view: View, c: MapColors
   if (view.extent <= 25) {
     for (const p of BASEMAP.suburbs) {
       const [x, y] = px(p.at);
-      if (x < 10 || y < 10 || x > view.size - 10 || y > view.size - 10) continue;
+      if (x < 10 || y < 10 || x > view.size - 10 || y > (view.height ?? view.size) - 10) continue;
       ctx.textAlign = 'center';
       label(p.name, x, y + 3, 500, small ? 9 : 10, c.label);
       ctx.textAlign = 'start';

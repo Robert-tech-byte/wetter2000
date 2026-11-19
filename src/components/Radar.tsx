@@ -145,8 +145,9 @@ export function Radar({ data, error, route }: { data: RadarData | null; error: s
         </div>
       )}
 
-      <button type="button" className="radar-frame" onClick={() => setLarge(true)} aria-label="Radar groß anzeigen">
-        <RadarCanvas data={data} t={t} extent={15} route={route} label="Regenradar München" />
+      {/* Overview: ±15 km wide, ±12 km high (just beyond the 10 km ring) to save height. */}
+      <button type="button" className="radar-frame wide" onClick={() => setLarge(true)} aria-label="Radar groß anzeigen">
+        <RadarCanvas data={data} t={t} extent={15} extentY={12} route={route} label="Regenradar München" />
         {!data && <span className="radar-loading">Radar wird geladen …</span>}
       </button>
       {controls}

@@ -43,10 +43,27 @@ const EMPTY: Choice = { work: null, dir: null, duration: null };
 interface Props {
   radar: RadarData | null;
   onRoute: (r: Km[] | null) => void;
+  /** Controlled from the header button („Komme ich trocken an?“). */
+  open: boolean;
+  onClose: () => void;
 }
 
-export function Commute({ radar, onRoute }: Props) {
-  const [open, setOpen] = useState(false);
+/** Header button that opens the commute check. */
+export function CommuteButton({ onOpen, open }: { onOpen: () => void; open: boolean }) {
+  return (
+    <button type="button" className="commute-cta" aria-expanded={open} onClick={onOpen}>
+      <span>Komme ich trocken an?</span>
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+export function Commute({ radar, onRoute, open, onClose }: Props) {
+  const setOpen = (v: boolean) => {
+    if (!v) onClose();
+  };
   const [editing, setEditing] = useState(false);
   const [trip, setTrip] = useState<Trip>(() => (new Date().getHours() < 12 ? 'hin' : 'heim'));
   const [choice, setChoice] = useState<Choice>(EMPTY);
@@ -61,6 +78,17 @@ export function Commute({ radar, onRoute }: Props) {
   );
 
   useEffect(() => onRoute(open && route ? route : null), [open, route, onRoute]);
+
+  // Every opening starts fresh: nothing from a previous check is kept.
+  useEffect(() => {
+    if (!open) return;
+    forgetOldSettings();
+    setNow(new Date());
+    setChoice(EMPTY);
+    setSlots(null);
+    setTrip(new Date().getHours() < 12 ? 'hin' : 'heim');
+    setEditing(true);
+  }, [open]);
 
   // Model data for departures beyond the nowcast, fetched for the route midpoint.
   useEffect(() => {
@@ -107,28 +135,7 @@ export function Commute({ radar, onRoute }: Props) {
 
   const update = (v: Partial<Choice>) => setChoice((s) => ({ ...s, ...v }));
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        className="commute-cta"
-        onClick={() => {
-          forgetOldSettings();
-          setNow(new Date());
-          setChoice(EMPTY);
-          setSlots(null);
-          setTrip(new Date().getHours() < 12 ? 'hin' : 'heim');
-          setOpen(true);
-          setEditing(true);
-        }}
-      >
-        <span>Komme ich trocken an?</span>
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-    );
-  }
+  if (!open) return null;
 
   return (
     <section className="commute" aria-label="Komme ich trocken an?">
