@@ -1,4 +1,4 @@
-import { AGREEMENT_DAYS, EPS_MODEL, FOEHN, FORECAST_DAYS, HIRES_MODELS, ICON_EU_FETCH_DAYS, LOCATION } from './config';
+import { AGREEMENT_DAYS, AIFS_MODEL, EPS_MODEL, EU_EPS_MODEL, FOEHN, FORECAST_DAYS, HIRES_MODELS, LOCATION } from './config';
 import { EXTRA_VARS, type Member } from './agreement';
 
 const OPEN_METEO = 'https://api.open-meteo.com/v1/forecast';
@@ -121,12 +121,12 @@ export interface ModelSeries {
   precipitation: (number | null)[];
 }
 
-/** ICON-EU alone, for the days after the agreement period (as far as the model reaches). */
-export async function fetchIconEu(): Promise<ModelSeries> {
+/** ECMWF AIFS (AI model), compared with the IFS main run after ICON-EU-EPS ends. */
+export async function fetchAifs(): Promise<ModelSeries> {
   const data = await getJson<HourlyResponse>(
     `${OPEN_METEO}?${params({
-      models: 'icon_eu',
-      forecast_days: ICON_EU_FETCH_DAYS,
+      models: AIFS_MODEL.id,
+      forecast_days: FORECAST_DAYS,
       hourly: 'temperature_2m,precipitation',
     })}`,
   );
@@ -138,11 +138,14 @@ export async function fetchIconEu(): Promise<ModelSeries> {
   };
 }
 
-export async function fetchEnsemble(): Promise<MemberSet> {
+export const fetchEnsemble = (): Promise<MemberSet> => fetchEps(EPS_MODEL.id, AGREEMENT_DAYS);
+export const fetchEuEnsemble = (): Promise<MemberSet> => fetchEps(EU_EPS_MODEL.id, EU_EPS_MODEL.fetchDays);
+
+async function fetchEps(model: string, days: number): Promise<MemberSet> {
   const data = await getJson<HourlyResponse>(
     `${OPEN_METEO_ENSEMBLE}?${params({
-      models: EPS_MODEL.id,
-      forecast_days: AGREEMENT_DAYS,
+      models: model,
+      forecast_days: days,
       hourly: 'temperature_2m,precipitation',
     })}`,
   );

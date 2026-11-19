@@ -1,4 +1,4 @@
-import { EPS_MODEL, HIRES_MODELS, MIN_COVERAGE, RAIN_THRESHOLD, TEMP_TOLERANCE } from '../lib/config';
+import { AIFS_MODEL, EPS_MODEL, EU_EPS_MODEL, HIRES_MODELS, MIN_COVERAGE, RAIN_THRESHOLD, TEMP_TOLERANCE } from '../lib/config';
 import { fmt1 } from '../lib/format';
 import { clock } from '../lib/time';
 import { Legend } from './Radar';
@@ -27,11 +27,14 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
             zeigt den Median aller Modelle, die Fläche ihre Spanne.
           </p>
           <p>
-            Ab dem vierten Tag reicht von diesen Modellen nur noch ICON-EU (DWD, etwa 120 Stunden). Solange es den Tag zu
-            mindestens {Math.round(MIN_COVERAGE * 100)} % abdeckt, wird es mit dem ECMWF-Hauptlauf verglichen: Temperatur =
-            Anteil der Stunden, in denen beide höchstens ±{fmt1(TEMP_TOLERANCE)} °C auseinanderliegen; Regen = beide mit
-            Regen oder beide trocken (●●●), sonst uneinig (●○○). Mit nur 2 Modellen ist das weniger belastbar als für die
-            ersten 3 Tage. Die Fläche im Diagramm zeigt dann den Abstand zwischen ECMWF und ICON-EU.
+            Ab dem vierten Tag nutzt die Treffsicherheit {EU_EPS_MODEL.name} ({EU_EPS_MODEL.provider}, {EU_EPS_MODEL.members}{' '}
+            Läufe, etwa {fmt1(EU_EPS_MODEL.resolutionKm)} km), solange es reicht (etwa 5 Tage), nach denselben Regeln wie oben,
+            nur über Läufe statt Modelle; die Regen-Spalte zeigt dann den Anteil der Läufe mit Regen. Danach wird der
+            ECMWF-Hauptlauf (IFS) mit {AIFS_MODEL.name} verglichen, dem KI-Modell von ECMWF (etwa {AIFS_MODEL.resolutionKm} km):
+            Temperatur = Anteil der Stunden, in denen beide höchstens ±{fmt1(TEMP_TOLERANCE)} °C auseinanderliegen; Regen =
+            beide mit Regen oder beide trocken (●●●), sonst uneinig (●○○). Beide stammen von ECMWF und starten vom selben
+            Zustand der Atmosphäre; das ist weniger belastbar als ein Vergleich vieler Modelle. Die Werte in den Zeilen
+            bleiben die des ECMWF-Hauptlaufs.
           </p>
           <p>
             {EPS_MODEL.name} ({EPS_MODEL.members} Läufe) wird gleich berechnet und separat angezeigt. Das Ergebnis ist

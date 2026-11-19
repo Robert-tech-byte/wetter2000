@@ -5,7 +5,8 @@ import {
   fetchEnsemble,
   fetchFoehn,
   fetchHiresModels,
-  fetchIconEu,
+  fetchAifs,
+  fetchEuEnsemble,
   type CurrentObservation,
   type EcmwfForecast,
   type FoehnSeries,
@@ -26,7 +27,8 @@ export interface WeatherState {
   eps: Loadable<MemberSet>;
   current: Loadable<CurrentObservation>;
   foehn: Loadable<{ munich: FoehnSeries; bozen: FoehnSeries }>;
-  iconEu: Loadable<ModelSeries>;
+  euEps: Loadable<MemberSet>;
+  aifs: Loadable<ModelSeries>;
 }
 
 const empty = { data: null, error: null };
@@ -48,18 +50,20 @@ export function useWeather() {
     eps: empty,
     current: empty,
     foehn: empty,
-    iconEu: empty,
+    euEps: empty,
+    aifs: empty,
   });
 
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true }));
-    const [ecmwf, hires, eps, current, foehn, iconEu] = await Promise.allSettled([
+    const [ecmwf, hires, eps, current, foehn, euEps, aifs] = await Promise.allSettled([
       fetchEcmwf(),
       fetchHiresModels(),
       fetchEnsemble(),
       fetchCurrentObservation(),
       fetchFoehn(),
-      fetchIconEu(),
+      fetchEuEnsemble(),
+      fetchAifs(),
     ]);
     setState({
       loading: false,
@@ -69,7 +73,8 @@ export function useWeather() {
       eps: settle(eps),
       current: settle(current),
       foehn: settle(foehn),
-      iconEu: settle(iconEu),
+      euEps: settle(euEps),
+      aifs: settle(aifs),
     });
   }, []);
 

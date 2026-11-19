@@ -68,7 +68,7 @@ export default function App() {
         </p>
       )}
 
-      <Days ecmwf={w.ecmwf.data} hires={w.hires.data} eps={w.eps.data} pressure={pressure} foehn={w.foehn.data} iconEu={w.iconEu.data} />
+      <Days ecmwf={w.ecmwf.data} hires={w.hires.data} eps={w.eps.data} pressure={pressure} foehn={w.foehn.data} euEps={w.euEps.data} aifs={w.aifs.data} />
 
       <About
         updatedAt={w.updatedAt}

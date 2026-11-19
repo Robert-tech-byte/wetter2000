@@ -13,11 +13,6 @@ export const RAIN_THRESHOLD = 0.1;
 export const MIN_COVERAGE = 0.75;
 /** Number of days (today included) for the agreement analysis. */
 export const AGREEMENT_DAYS = 3;
-/**
- * From day AGREEMENT_DAYS on only ICON-EU (DWD, ~7 km, 120 h) is still available among the
- * high-resolution models; it is compared with the ECMWF main run as long as it reaches.
- */
-export const ICON_EU_FETCH_DAYS = 6;
 /** Length of the main forecast in days (ECMWF IFS). */
 export const FORECAST_DAYS = 15;
 
@@ -63,4 +58,25 @@ export const FOEHN = {
   minHours: 2,
   /** Local hours considered (inclusive start, exclusive end). */
   hours: [6, 22] as const,
+};
+
+/**
+ * Beyond ICON-D2-EPS (2 days): ICON-EU-EPS for the agreement and the ensemble details,
+ * as far as it reaches (about 5 days).
+ */
+export const EU_EPS_MODEL = {
+  id: 'icon_eu',
+  name: 'ICON-EU-EPS',
+  provider: 'DWD',
+  resolutionKm: 6.5,
+  members: 40,
+  fetchDays: 6,
+};
+
+/** After ICON-EU-EPS: ECMWF's AI model AIFS compared with the ECMWF main run (IFS). */
+export const AIFS_MODEL = {
+  id: 'ecmwf_aifs025_single',
+  name: 'ECMWF AIFS',
+  provider: 'ECMWF',
+  resolutionKm: 28,
 };
