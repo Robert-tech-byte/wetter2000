@@ -4,6 +4,7 @@ import { nowcastSentence } from '../lib/nowcast';
 import { pointRateAt, rainCss, RAIN_STOPS, type RadarData } from '../lib/radar';
 import { clock } from '../lib/time';
 import { RadarCanvas } from './RadarCanvas';
+import { RadarZoom } from './RadarZoom';
 import type { Km } from '../lib/geo';
 
 const RAIN = 0.1;
@@ -160,9 +161,7 @@ export function Radar({ data, error, route }: { data: RadarData | null; error: s
           </button>
         </div>
         {large && (
-          <div className="radar-frame big">
-            <RadarCanvas data={data} t={t} extent={40} route={route} label="Regenradar München und Umland, groß" />
-          </div>
+          <RadarZoom data={data} t={t} route={route} />
         )}
         {controls}
         <Legend />

@@ -70,10 +70,16 @@ export interface View {
   size: number;
   /** Half width of the shown square in km. */
   extent: number;
+  /** Centre of the view in km from Munich (default 0, 0). */
+  cx?: number;
+  cy?: number;
 }
 
-export function projector({ size, extent }: View) {
-  return ([x, y]: Km): [number, number] => [((x + extent) / (2 * extent)) * size, ((extent - y) / (2 * extent)) * size];
+export function projector({ size, extent, cx = 0, cy = 0 }: View) {
+  return ([x, y]: Km): [number, number] => [
+    ((x - cx + extent) / (2 * extent)) * size,
+    ((cy + extent - y) / (2 * extent)) * size,
+  ];
 }
 
 function trace(ctx: CanvasRenderingContext2D, line: Km[], px: (p: Km) => [number, number]) {

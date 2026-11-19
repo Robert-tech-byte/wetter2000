@@ -10,7 +10,7 @@ Eine Spalte, drei Ebenen: Auf einen Blick steht die Antwort, Antippen zeigt die 
 - **Jetzt:** Temperatur der DWD-Station München-Stadt (Bright Sky), Wetterlage, Hoch/Tief. Aufklappbar: gefühlte Temperatur, Wind, Luftdruck, Sonne.
 - **Nächste 12 Stunden:** seitlich wischbare Leiste mit Symbol, Temperatur und Regenwahrscheinlichkeit (Median der 7 Modelle, Bewölkung für das Symbol). Die erste Karte „Jetzt“ nutzt Messwert und Radar-Nowcast. Antippen einer Stunde zeigt Details: Temperatur mit Modellspanne, gefühlte Temperatur, Regen, Wind/Böen mit Richtung, Bewölkung, Luftfeuchte und Treffsicherheit.
 - **Regen in der nächsten Stunde:** ein Satz und ein Streifen mit 12 Fünf-Minuten-Werten.
-- **Regenradar:** DWD-Radarkomposit in 1-km-Blöcken (5 min) der letzten Stunde plus DWD-Nowcast für 60 Minuten, mit Überblendung. Übersicht ±15 km, Antippen öffnet ±40 km.
+- **Regenradar:** DWD-Radarkomposit (1 km, zwischen den Messpunkten weich interpoliert, 5 min) der letzten Stunde plus DWD-Nowcast für 60 Minuten, mit Überblendung. Übersicht ±15 km, Antippen öffnet ±40 km; dort zoombar bis ±6 km (Zwei-Finger-Zoom, Ziehen, Doppeltipp, Mausrad, +/−).
 - **Grundkarte:** eigene Vektorkarte ohne Kartenkacheln: Stadtgrenze, Stadtteile, Hauptstraßen, Autobahnen, Isar, Seen, Orte, Entfernungsringe.
 - **GroWeLa:** Knopf über „Mehr zu jetzt“, erklärt die Großwetterlage und das Warum (Herkunft der Luft, auf- oder absinkende Luft, Drucktendenz, Wind, Föhn-Mechanismus; Anströmrichtung, zyklonal/antizyklonal, Lage von Hoch und Tief, Bedeutung für München, Trend 3 Tage) aus dem ECMWF-Luftdruck.
 - **Föhn:** Kennzeichen an Tagen, an denen laut ECMWF Föhn wahrscheinlich ist (Druck Bozen − München ≥ 4 hPa, Höhenwind S–SW, Luftfeuchte < 55 %).

@@ -381,6 +381,53 @@ button {
   justify-content: space-between;
   align-items: center;
 }
+.radar-zoom {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+.radar-frame.big.zoomable {
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.radar-frame.big.zoomable:active {
+  cursor: grabbing;
+}
+.radar-move {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.zoom-buttons {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.zoom-buttons .round {
+  font: 600 1.05rem var(--font-body);
+  line-height: 1;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+.zoom-buttons .round:disabled {
+  opacity: 0.4;
+}
+.zoom-buttons .round.wide {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 999px;
+  font: 500 0.72rem var(--font-mono);
+}
 .radar-frame.big {
   cursor: default;
   max-height: calc(100dvh - 200px);

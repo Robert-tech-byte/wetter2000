@@ -70,7 +70,7 @@ export function About({ updatedAt, loading, onReload }: { updatedAt: Date | null
           </p>
           <h3>Regenradar</h3>
           <p>
-            DWD-Radarkomposit in 1-km-Blöcken, alle 5 Minuten: die letzte Stunde gemessen, danach die DWD-Vorhersage
+            DWD-Radarkomposit mit 1 km Auflösung, zwischen den Messpunkten weich interpoliert (keine feineren Details als 1 km), alle 5 Minuten: die letzte Stunde gemessen, danach die DWD-Vorhersage
             für 60 Minuten. Zwischen den Bildern wird überblendet.
           </p>
           <Legend />

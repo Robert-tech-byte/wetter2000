@@ -162,6 +162,25 @@ export function rainColor(v: number): [number, number, number, number] | null {
   return [l[1], l[2], l[3], l[4]];
 }
 
+/** Lookup table for rainColor (RGBA bytes), indexed by round(rate * LUT_STEPS). */
+export const LUT_STEPS = 50;
+export const RAIN_LUT: Uint8ClampedArray = (() => {
+  const max = 60 * LUT_STEPS;
+  const lut = new Uint8ClampedArray((max + 1) * 4);
+  const first = rainColor(RAIN_STOPS[0][0])!;
+  for (let i = 0; i <= max; i++) {
+    const v = i / LUT_STEPS;
+    const c = rainColor(v);
+    if (c) lut.set([c[0], c[1], c[2], Math.max(c[3], 0.35) * 255], i * 4);
+    // Soft edge: fade in between half the threshold and the threshold instead of a hard cut.
+    else if (v >= RAIN_STOPS[0][0] / 2) {
+      const f = (v - RAIN_STOPS[0][0] / 2) / (RAIN_STOPS[0][0] / 2);
+      lut.set([first[0], first[1], first[2], 0.35 * 255 * f], i * 4);
+    }
+  }
+  return lut;
+})();
+
 export function rainCss(v: number, minAlpha = 0): string {
   const c = rainColor(v);
   if (!c) return 'transparent';
