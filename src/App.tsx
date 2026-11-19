@@ -60,7 +60,7 @@ export default function App() {
 
       <Radar data={radar.data} error={radar.error} route={route} />
 
-      <Trend14 data={trend} />
+      <Trend14 data={trend} ecmwf={w.ecmwf.data} />
 
       {errors.length > 0 && (
         <p className="error" role="alert">

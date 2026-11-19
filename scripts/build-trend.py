@@ -29,7 +29,7 @@ def fetch():
         "latitude": LAT,
         "longitude": LON,
         "models": MODEL,
-        "hourly": "temperature_2m,precipitation",
+        "hourly": "temperature_2m,precipitation,cloud_cover",
         "forecast_days": 16,
         "timezone": "Europe/Berlin",
     }
@@ -131,6 +131,27 @@ def summarize(hourly):
     return days
 
 
+def clouds(hourly, block=3):
+    """
+    Cloud cover per 3-hour block: median over all runs for every hour, averaged over the block.
+    Returns [["YYYY-MM-DDTHH", percent], ...] or [] if the model does not provide cloud cover.
+    """
+    times = hourly["time"]
+    runs = members(hourly, "cloud_cover")
+    if len(runs) < 10:
+        return []
+    per_hour = []
+    for i, t in enumerate(times):
+        vals = [v[i] for _, v in runs if v[i] is not None]
+        per_hour.append((t, percentile(vals, 50) if len(vals) >= 10 else None))
+    out = []
+    for i in range(0, len(per_hour), block):
+        chunk = [c for _, c in per_hour[i : i + block] if c is not None]
+        if len(chunk) == block:
+            out.append([per_hour[i][0][:13], round(sum(chunk) / block)])
+    return out
+
+
 def keep_published(path):
     try:
         with urllib.request.urlopen(PUBLISHED, timeout=20) as r:
@@ -151,6 +172,7 @@ def main():
     try:
         raw = fetch()
         days = summarize(raw["hourly"])
+        cloud = clouds(raw["hourly"])
         if len(days) < 10:
             raise RuntimeError(f"only {len(days)} days")
     except Exception as e:  # noqa: BLE001
@@ -173,9 +195,10 @@ def main():
         "model": MODEL,
         "generated": time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime()),
         "days": days,
+        "clouds": cloud,
     }
     path.write_text(json.dumps(out, separators=(",", ":")))
-    print(f"Wrote {path} ({path.stat().st_size // 1024} KB, {len(days)} days, {days[0]['members']} members)")
+    print(f"Wrote {path} ({path.stat().st_size // 1024} KB, {len(days)} days, {days[0]['members']} members, {len(cloud)} cloud blocks)")
 
 
 if __name__ == "__main__":

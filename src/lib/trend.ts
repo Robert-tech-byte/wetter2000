@@ -18,6 +18,8 @@ export interface TrendData {
   model: string;
   generated: string;
   days: TrendDay[];
+  /** Cloud cover per 3-hour block: ["YYYY-MM-DDTHH" (local), percent], median of the runs. */
+  clouds?: [string, number][];
 }
 
 const WD = new Intl.DateTimeFormat('de-DE', { weekday: 'long', timeZone: 'UTC' });
@@ -84,4 +86,33 @@ export function trendSummary(days: TrendDay[]): string {
   else if (frostMaybe) parts.push(`Nachtfrost möglich ab ${name(frostMaybe)}`);
 
   return `${parts.join(', ')}. ${rainSentence(days)}`;
+}
+
+type Rgb = [number, number, number];
+/** Cloud colour stops by cover (%): day from sunny yellow to overcast dark grey. */
+const DAY_STOPS: [number, Rgb][] = [
+  [0, [246, 201, 69]],
+  [25, [248, 227, 160]],
+  [50, [217, 221, 226]],
+  [75, [169, 177, 186]],
+  [100, [111, 122, 134]],
+];
+/** Night: clear = dark blue, overcast = dark grey (muted, no sun at night). */
+const NIGHT_STOPS: [number, Rgb][] = [
+  [0, [49, 72, 115]],
+  [50, [74, 86, 104]],
+  [100, [88, 96, 106]],
+];
+
+/** Colour of the cloud band for a cover in % (day or night), as CSS rgb(). */
+export function cloudColor(cover: number, night: boolean): string {
+  const stops = night ? NIGHT_STOPS : DAY_STOPS;
+  const c = Math.max(0, Math.min(100, cover));
+  let k = 1;
+  while (k < stops.length - 1 && c > stops[k][0]) k++;
+  const [c0, a] = stops[k - 1];
+  const [c1, b] = stops[k];
+  const f = c1 === c0 ? 0 : (c - c0) / (c1 - c0);
+  const mix = a.map((v, i) => Math.round(v + (b[i] - v) * f));
+  return `rgb(${mix.join(', ')})`;
 }

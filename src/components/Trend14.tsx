@@ -1,11 +1,14 @@
 import { useMemo } from 'react';
 import { localHourKey } from '../lib/time';
-import { nextDays, trendSummary, type TrendData } from '../lib/trend';
+import type { EcmwfForecast } from '../lib/api';
+import { cloudColor, nextDays, trendSummary, type TrendData } from '../lib/trend';
 
 const W = 358;
 const T = 18; // top of the temperature area (room for the max labels)
 const B = 150; // bottom of the temperature area
-const RT = 190; // top of the rain bars (mm labels sit above them)
+const CY = 172; // cloud band (below the lowest minimum labels)
+const CH = 10;
+const RT = 214; // top of the rain bars (mm labels sit above them)
 const RH = 30; // height of the rain bars
 const H = RT + RH + 30;
 
@@ -28,9 +31,18 @@ function openDay(date: string) {
  * value written at its dot; the zero line is the only guide. Below: rain bars (amount in mm,
  * written above the bar) and the rain probability in %.
  */
-export function Trend14({ data }: { data: TrendData | null }) {
+export function Trend14({ data, ecmwf }: { data: TrendData | null; ecmwf?: EcmwfForecast | null }) {
   const today = localHourKey().slice(0, 10);
   const days = useMemo(() => (data ? nextDays(data, today, 15) : []), [data, today]);
+  // Sunrise/sunset per day (ECMWF daily) to tell day from night; fallback 7–17 h.
+  const sun = useMemo(() => {
+    const m = new Map<string, [number, number]>();
+    ecmwf?.daily.time.forEach((d, i) => {
+      const h = (t: string) => Number(t.slice(11, 13)) + Number(t.slice(14, 16)) / 60;
+      if (ecmwf.daily.sunrise[i] && ecmwf.daily.sunset[i]) m.set(d, [h(ecmwf.daily.sunrise[i]), h(ecmwf.daily.sunset[i])]);
+    });
+    return m;
+  }, [ecmwf]);
   if (days.length < 7) return null;
 
   const n = days.length;
@@ -41,6 +53,18 @@ export function Trend14({ data }: { data: TrendData | null }) {
   const y = (v: number) => B - ((v - lo) / (hi - lo)) * (B - T);
   const path = (k: 'max' | 'min') => 'M' + days.map((d, i) => `${x(i).toFixed(1)},${y(d[k].p50).toFixed(1)}`).join('L');
   const rmax = Math.max(1, ...days.map((d) => d.rain.p50));
+
+  // Cloud band: one gradient stop per 3-hour block at its centre, placed on the day columns.
+  const dayIndex = new Map(days.map((d, i) => [d.date, i]));
+  const cloudStops = (data?.clouds ?? [])
+    .map(([t, c]) => {
+      const i = dayIndex.get(t.slice(0, 10));
+      if (i == null) return null;
+      const hour = Number(t.slice(11, 13)) + 1.5;
+      const [rise, set] = sun.get(t.slice(0, 10)) ?? [7, 17];
+      return { x: (i + hour / 24) * step, color: cloudColor(c, hour < rise || hour > set) };
+    })
+    .filter((v): v is { x: number; color: string } => v != null);
 
   return (
     <section className="trend14" aria-labelledby="trend-title">
@@ -72,6 +96,25 @@ export function Trend14({ data }: { data: TrendData | null }) {
           </g>
         ))}
 
+        {cloudStops.length > 4 && (
+          <g>
+            <defs>
+              <linearGradient id="t-clouds" gradientUnits="userSpaceOnUse" x1={0} x2={W} y1={0} y2={0}>
+                {cloudStops.map((c) => (
+                  <stop key={c.x} offset={Math.max(0, Math.min(1, c.x / W))} stopColor={c.color} />
+                ))}
+              </linearGradient>
+            </defs>
+            <rect
+              x={0}
+              y={CY}
+              width={Math.min(W, cloudStops[cloudStops.length - 1].x + (step * 1.5) / 24)}
+              height={CH}
+              rx={3}
+              fill="url(#t-clouds)"
+            />
+          </g>
+        )}
         <line x1={0} x2={W} y1={RT + RH} y2={RT + RH} className="t-base" />
         {days.map((d, i) => {
           const h = (d.rain.p50 / rmax) * RH;
@@ -126,6 +169,11 @@ export function Trend14({ data }: { data: TrendData | null }) {
         <span>
           <b className="t-rain-c">▮</b> Regen in mm, darunter Wahrscheinlichkeit in %
         </span>
+        {cloudStops.length > 4 && (
+          <span>
+            <b className="t-cloud-c" aria-hidden="true" /> Bewölkung: gelb sonnig, grau bewölkt, blau klare Nacht
+          </span>
+        )}
         <span>H = heute</span>
       </p>
     </section>

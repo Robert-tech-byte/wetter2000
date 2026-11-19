@@ -47,3 +47,13 @@ describe('trend', () => {
     expect(n).toHaveLength(15);
   });
 });
+
+import { cloudColor } from './trend';
+describe('cloud colour', () => {
+  it('day: sunny yellow to overcast grey; night: clear dark blue', () => {
+    expect(cloudColor(0, false)).toBe('rgb(246, 201, 69)');
+    expect(cloudColor(100, false)).toBe('rgb(111, 122, 134)');
+    expect(cloudColor(0, true)).toBe('rgb(49, 72, 115)');
+    expect(cloudColor(37.5, false)).toBe('rgb(233, 224, 193)');
+  });
+});
