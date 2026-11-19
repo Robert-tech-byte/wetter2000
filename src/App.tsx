@@ -36,7 +36,7 @@ export default function App() {
 
   return (
     <>
-    {/* Concept C: brand, current reading and all actions form one instrument panel. */}
+    {/* Brand bar (blue): logo, claim, refresh. */}
     <header className="masthead instrument">
       <Skyline />
       <div className="masthead-in">
@@ -59,6 +59,11 @@ export default function App() {
             </svg>
           </button>
         </div>
+      </div>
+    </header>
+    {/* Current reading and all actions directly below the brand bar, on the page background. */}
+    <section className="ins-now" aria-label="Jetzt">
+      <div className="ins-now-in">
         {w.loading && !w.updatedAt ? (
           <div className="loading" aria-live="polite">
             Lade Wetterdaten …
@@ -79,7 +84,7 @@ export default function App() {
           </button>
         </div>
       </div>
-    </header>
+    </section>
     <div className="app">
       <Commute radar={radar.data} onRoute={setRoute} open={commute} onClose={() => setCommute(false)} />
       {gw && <GrowelaPanel pressure={pressure} foehn={w.foehn.data} />}
