@@ -4,7 +4,7 @@ Builds src/data/basemap.json: simplified OpenStreetMap geodata for the radar bas
 
 Contents: Munich city boundary, Isar, Starnberger See, Ammersee, motorways, main roads
 (trunk/primary, within ±25 km), district and town labels and the U-Bahn station
-Schwanthalerhöhe and Westfriedhof (workplaces for the commute check). Data © OpenStreetMap contributors (ODbL).
+Schwanthalerhöhe, Westfriedhof and Universität (workplaces for the commute check). Data © OpenStreetMap contributors (ODbL).
 
 Run manually (needs internet):  python3 scripts/build-basemap.py
 or via the "Update basemap" GitHub workflow.
@@ -55,6 +55,9 @@ PLACES = {
     "Holzkirchen": "Holzkirchen",
 }
 
+# U-Bahn stations offered as workplaces in the commute check (order = order of the buttons).
+WORKPLACE_NAMES = ["Schwanthalerhöhe", "Westfriedhof", "Universität"]
+
 QUERY_BASE = f"""
 [out:json][timeout:180];
 (
@@ -67,7 +70,7 @@ QUERY_BASE = f"""
 out geom;
 node["place"~"^(suburb|quarter|neighbourhood)$"]["name"~"^({'|'.join(SUBURBS)})$"]({BBOX_ROADS});
 out;
-node["railway"="station"]["station"="subway"]["name"~"^(Schwanthalerhöhe|Westfriedhof)$"];
+node["railway"="station"]["station"="subway"]["name"~"^(Schwanthalerhöhe|Westfriedhof|Universität)$"]({BBOX});
 out;
 nwr["aeroway"="aerodrome"]["iata"="MUC"];
 out center;
@@ -271,6 +274,9 @@ def main():
             f"anchors={list(anchors)} roads={len(main_roads)}"
         )
     print(f"Suburbs found: {[p['name'] for p in suburbs]}", file=sys.stderr)
+    lost = [n for n in WORKPLACE_NAMES if n not in anchors]
+    if lost:
+        print(f"WARNING: workplace stations not found: {lost}", file=sys.stderr)
 
     out = {
         "attribution": "© OpenStreetMap contributors, ODbL 1.0 – simplified",
@@ -283,7 +289,7 @@ def main():
         "places": places,
         "suburbs": suburbs,
         "anchor": anchors["Schwanthalerhöhe"] | {"name": "U Schwanthalerhöhe"},
-        "workplaces": [anchors["Schwanthalerhöhe"], anchors["Westfriedhof"]],
+        "workplaces": [anchors[n] for n in WORKPLACE_NAMES if n in anchors],
     }
     path = Path(__file__).resolve().parent.parent / "src" / "data" / "basemap.json"
     path.parent.mkdir(parents=True, exist_ok=True)

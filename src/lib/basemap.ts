@@ -47,6 +47,8 @@ export const WORKPLACES: Workplace[] = (() => {
   const fallback: Record<string, [number, number]> = {
     Schwanthalerhöhe: [48.1336, 11.5403],
     Westfriedhof: [48.1584, 11.5306],
+    // Approximate until the map data are regenerated from OpenStreetMap.
+    Universität: [48.1503, 11.5806],
   };
   return Object.entries(fallback).map(([name, [lat, lon]]) => {
     const d = fromData.get(name);

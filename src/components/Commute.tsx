@@ -157,7 +157,7 @@ export function Commute({ radar, onRoute, open, onClose }: Props) {
       {(editing || !ready) && (
         <div className="commute-setup">
           <p className="setup-q">Wo ist die Arbeit?</p>
-          <div className="seg wide" role="radiogroup" aria-label="Arbeitsort">
+          <div className="seg wide stack" role="radiogroup" aria-label="Arbeitsort">
             {WORKPLACES.map((w) => (
               <button key={w.id} type="button" role="radio" aria-checked={choice.work === w.id} onClick={() => update({ work: w.id })}>
                 {w.name}
